@@ -5,7 +5,7 @@ description: Each weekday morning, summarise Ayman's Linear asks in five lines â
 
 # Proposal: daily Linear check
 
-*Status: **Proposed** (7 Nov 2026). Source: Arthur's "How to ask S&L" guide, "a permanent agent with a loop". Ayman said "no other admin for now", so this waits for his yes.*
+*Status: **Parked** (Ayman, 7 Nov 2026: "no need for now"). Raise again only if he asks. Source: Arthur's "How to ask S&L" guide, "a permanent agent with a loop". Ayman said "no other admin for now", so this waits for his yes.*
 
 ## What it would do
 

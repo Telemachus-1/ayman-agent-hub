@@ -24,3 +24,4 @@
 - 2026-11-07 — Arthur's BU lead and Technical playbooks translated into skills (`linear-ask`, `linear-card-work`, `research-brief`, `supplier-outreach-prep`, `helm-work`, `code-change`, `pr-review-merge`), updated to the newer live Linear docs (TEL is the front door; leads are Arthur, Dimitri and Basil). Technical skills apply whenever Ayman's agents ship code. (Ayman)
 - 2026-11-07 — Arthur's Linear agent files (29 Aug versions) stored in `reference/arthur-linear-2026-08-29/`; still-current rules folded into `linear-ask` and `linear-card-work`. Where they conflict with the live Linear docs (TEL front door, leads, labels), the live docs win as the newer rule. (Ayman)
 - 2026-11-07 — Knowledge base created in Notion. Ayman's own notes are Approved; entries drawn from Arthur's docs start as Proposed. (Ayman)
+- 2026-11-07 — Daily Linear check: not now. Proposal parked in `proposals/`, not added to the daily sweep. (Ayman)
