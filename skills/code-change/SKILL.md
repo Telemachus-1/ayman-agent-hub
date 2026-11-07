@@ -49,6 +49,7 @@ CI on the PR's exact head is **the** test run. While building, run only the test
 ## Open the PR (only when ready to merge)
 
 - **No draft PRs.** Unfinished work stays a branch.
+- Put the card key in the PR title **and** the commit bodies. A card attaches to a Linear release only if its key is in the commits.
 - `gh pr create --repo Telemachus-1/<repo> --title "<CARD-KEY> <outcome>"`. In the body:
   - `Refs <CARD-KEY>` (never "Fixes" or "Closes");
   - what changed and why;

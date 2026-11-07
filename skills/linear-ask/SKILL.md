@@ -5,7 +5,7 @@ description: File a request (an "ask") in Telemachus's Linear the way the compan
 
 # File an ask in Linear
 
-*Sources: "Asking for something — the two-minute guide" (Linear, updated 22 Oct 2026), "How Telemachus works — the contract" (21 Oct 2026), Arthur's BU lead playbook v6.1 §5. Where they disagree, the newest dated one wins; this skill already follows it.*
+*Sources: "Asking for something — the two-minute guide" (Linear, updated 22 Oct 2026), "How Telemachus works — the contract" (21 Oct 2026), Arthur's BU lead playbook v6.1 §5, and Arthur's agent contract and ask skeleton (29 Aug 2026, in `reference/arthur-linear-2026-08-29/`). Where they disagree, the newest dated one wins; this skill already follows it. The reference README lists what changed.*
 
 ## 1. Before you file
 
@@ -29,7 +29,9 @@ Route by **what the work is**, not who asked. The team says who does it; the **B
 
 ## 3. Fill the template
 
-Use the team's template (`list_templates`): **Ask Telemachus** on TEL (the light ask), or **Ask Systems** / **Ask Warehousing** / **Ask Logistics** / **Ask Athena** on those teams. Keep every section:
+Use the team's template (`list_templates`, then `get_template`): **Ask Telemachus** on TEL (the light ask), or **Ask Systems** / **Ask Warehousing** / **Ask Logistics** / **Ask Athena** on those teams. **Through the API or MCP, a template does not fill itself in.** Pass it to `save_issue`, or reproduce its sections yourself in order. A nightly lint (07:00 London) moves asks with missing sections to Backlog.
+
+For anything substantial, use the full nine sections (the Ask Systems shape) even on TEL. Keep every section:
 
 - **Action:** one concrete, finishable deliverable, verb first. Title verb-first too.
 - **What for:** what it unlocks, who asked, who benefits.
@@ -39,14 +41,17 @@ Use the team's template (`list_templates`): **Ask Telemachus** on TEL (the light
 - **Discussed with:** who has already been spoken to, or "no one yet".
 - **Best person:** Arthur, Dimitri, Basil, or "don't know".
 - **Notes and Files:** everything needed to start without chasing.
-- End with `<!-- requester: Ayman | agent: <tool> | session: <name> -->`.
+- End with the footer line, keeping the HTML comment: `<!-- requester: Ayman | agent: <tool> | session: <name> -->`.
+- **Never invent numbers, dates or deadlines** Ayman didn't give. If one is needed, ask.
+- **Attach files and links in the same step** as creating the card.
+- **Project:** leave it blank. S&L put every SYS and LOG issue in a project with one lead.
 
 **Labels:**
 - **BU label** (one): TopCo, Toysellers, Booksellers, Valen Trading, Valen & Co, Athena, or Systems & Logistics. Since Ayman helps every BU, use the BU the work is *for*. Never Lush Lobster.
 - **Size label** (one): 5 min · 10 min · 20 min · 45 min · 1 hr · 2 hrs · 4 hrs · half-day · 1 day · 1-2 days · week+. Size is **human** focus time; agents do the paperwork, so size small when unsure.
 - `larger` if it is more than a week of work. `Drop everything` only when it is literally that, which is rare.
 
-**Priority means a date** (a suggestion; S&L may move it and will say why):
+**Priority means a date.** Use **Medium** unless Ayman says otherwise. Use Urgent or High only when "Why urgent" says why. It's a suggestion; S&L may move it and will say why.
 
 | Priority | Means |
 |---|---|

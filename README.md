@@ -18,6 +18,7 @@ Shared rules, skills and company knowledge for every agent Ayman runs: Claude Co
 | `proposals/` | Draft skills from agents, reviewed weekly. Not live. |
 | `jobs/` | Prompts for scheduled jobs: daily sweep, weekly skill miner |
 | `kb/` | Knowledge base seed and export |
+| `reference/` | Source documents the skills were built from (for example Arthur's Linear files). Agents follow the skills, not these. |
 | `install/` | How each tool loads the hub |
 
 ## Changing a rule
