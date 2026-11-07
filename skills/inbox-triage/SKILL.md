@@ -34,7 +34,7 @@ Create these once if they are missing (check with `list_labels` first):
 | Calendar invite proposing a new time, or a tentative reply | Keep in inbox (treated like a decline). |
 | Automated notices with no action (receipts, shipping updates, sign-in alerts) | `Triage/Irrelevant`, archive. Receipts also keep the existing `Receipts` label. |
 | Anything that mentions Lush Lobster | Leave untouched. |
-| *Proposed after the dry run of 7 Nov, waiting for Ayman's yes:* | |
+| *Added 7 Nov after the dry run, approved by Ayman:* | |
 | Invitation for a meeting that has already happened | Archive. |
 | Meeting-recap mail with action items (for example Calendly notes) | Copy the action items into the update, then archive. |
 | Thread where Ayman sent the last message | Keep in inbox, no label. List under "Waiting on others". |

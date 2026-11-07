@@ -20,4 +20,5 @@
 - 2026-11-07 — Reply style approved: lead with the answer; decisions on their own line starting `DECISION:`. (Ayman)
 - 2026-11-07 — Extra connector limits approved: no accepting calendar invites, no sharing Drive files, no Slack reactions, no marking mail as spam, no pushing to `main` on company repos. (Ayman)
 - 2026-11-07 — The daily update runs as a Claude scheduled task. Ayman reads it and replies in the same chat (for example to approve KB entries). (Ayman)
+- 2026-11-07 — Four triage rules approved: archive past-meeting invitations; copy recap action items then archive; keep threads where Ayman sent last ("Waiting on others"); account invites and sign-ups that need action are Must respond. First full sweep run the same day. (Ayman)
 - 2026-11-07 — Knowledge base created in Notion. Ayman's own notes are Approved; entries drawn from Arthur's docs start as Proposed. (Ayman)
