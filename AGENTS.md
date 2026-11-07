@@ -35,7 +35,19 @@ The Telemachus knowledge base lives in Notion: https://app.notion.com/p/37abc18a
 
 ## Skills and learning
 
-Shared skills are in `skills/`. When you notice a procedure Ayman repeats, write a draft skill into `proposals/`. Never install it yourself. Ayman reviews proposals weekly.
+Shared skills are in `skills/`. Load the one that fits before you start:
+
+- `linear-ask`: file a request, including handing work to the technical team.
+- `linear-card-work`: work a card from claim to Result and In Review.
+- `research-brief`: research and documents, with sources.
+- `supplier-outreach-prep`: prepare contact with a supplier or customer (never send).
+- `helm-work`: look-ups and preview-and-confirm changes in Helm.
+- `code-change`: branch to PR in a company repo.
+- `pr-review-merge`: review, and merge through the merge queue.
+- `inbox-triage`: the Gmail sweep.
+- `kb-propose`: suggest a knowledge base entry.
+
+When you notice a procedure Ayman repeats, write a draft skill into `proposals/`. Never install it yourself. Ayman reviews proposals weekly.
 
 ## Deeper rules (read when relevant)
 

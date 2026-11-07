@@ -4,25 +4,29 @@
 
 ## Linear
 
-Live teams (checked 7 Nov 2026):
+*Updated 7 Nov 2026 from the live Linear docs ("Asking for something — the two-minute guide", 22 Oct; "How Telemachus works", 21 Oct), which are newer than Arthur's 16 Oct playbook. Full procedures are in the `linear-ask` and `linear-card-work` skills.*
 
 | Key | Team | Use it for |
 |---|---|---|
-| SYS | Systems | Systems, data, integrations, ops. File with the **Ask S&L** template, add the BU label. |
-| WHS | Warehousing | Warehouse build-out, equipment, process. File with **Ask Warehousing**. |
-| LOG | Logistics | Shipments, carriers, chasing, orders people can't see. |
-| TEL | Telemachus | Catch-all for anything not on SYS. |
-| ATH | Athena | Athena work. |
+| TEL | Telemachus | **The front door. File asks here.** S&L pull theirs into SYS or LOG and post the outcome back on the TEL card. |
+| SYS | Systems | Code, data, automation, Apothekon, integrations (Arthur, Dimitri). |
+| LOG | Logistics | Shipments, carriers, POs, deliveries, stock someone can't see (Basil, Arthur). |
+| WHS | Warehousing | The physical warehouse: racking, kit, SOPs, the floor (Lawrence runs the floor). |
+| ATH | Athena | The Athena portal (Danny's team). |
 | DIR | Direct to consumer | D2C planning. |
 | SOC | Socials and marketing | Socials and marketing. |
+| ART | Arthur | Arthur's private board. **Never file here.** |
 | LUS | Lush Lobster | **Off-limits. Never touch.** |
 
-- **One ask per card, one owner.** Check for an existing card before you create one.
-- **Ask for the outcome, not the method.** Action (verb first), what for, urgency, size, "done when".
-- **Urgency clock on SYS and WHS** (from the team descriptions): Urgent 24 h, High 48 h, Medium 96 h, Low 240 h. Give a reason for High or Urgent.
-- **Done** only when the result is clear and checkable. If it needs a person's judgement, it goes to **In Review**.
-- **Results** say what was done, where it is, what to check and who reviewed it.
-- PRs say "Refs <card>", never "Fixes" or "Closes".
+- **One ask per card, one owner.** Search before you create.
+- **Ask for the outcome, not the method:** Action (verb first), What for, Urgency, Why urgent, Done when, Discussed with, Best person, Notes, Files.
+- **BU label on every card:** TopCo, Toysellers, Booksellers, Valen Trading, Valen & Co, Athena or Systems & Logistics.
+- **Priority means a date:** Urgent = a deadline, money, stock or a customer within a day (24 h); High = within about 3 days (48 h); Medium = within about 5 days (96 h); Low = within two weeks (240 h). Give a reason for High or Urgent.
+- **Hand-back:** a **Result** comment (what was done, where it is, what to check), then **In Review** assigned to the requester. Nobody reviews their own work. Objectively done work can go straight to Done.
+- **Backlog** only when the card says `Owed by <name>: <the one thing>`. Waiting on a named person is a blocking sub-issue, not a comment.
+- **Everything is readable in Linear:** plans, reports and evidence are uploaded and linked, never a path on an agent's machine.
+- PRs say "Refs <card>", never "Fixes" or "Closes", and are attached to their card.
+- **Leads (22 Oct 2026):** Arthur, Dimitri and Basil. Alessa has left.
 
 ## Who decides
 
@@ -31,17 +35,21 @@ Live teams (checked 7 Nov 2026):
 
 ## Data and systems
 
-- **Data fixes are never done by hand or as code.** Ask for them on SYS. They run as reviewed data packs. Ayman's agents never sign an approval line (`msdb-ok`, `lyt-ok`).
+- **Data fixes are never done by hand or as code.** Ask for them (file on TEL; S&L pull them into SYS). They run as reviewed data packs. Ayman's agents never sign an approval line (`msdb-ok`, `lyt-ok`).
 - **Features are generic for every BU.** A BU difference is a setting, never code that names one BU.
 - **Helm:** every write previews first and returns a confirm token. Show the summary, wait for Ayman, then confirm with the same arguments. Never invent or reuse a token. Money is a decimal string. Products are identified by EAN within a BU, never by title alone.
 - **Helm cannot operate the warehouse** without the warehouse grant. Without it, say it is warehouse work and escalate.
 
 ## Code
 
-- Ayman does not ship code to Mothership or Ajax. When he reviews and merges a PR:
-  - **Mothership merges only through GitHub's merge queue.** Never a direct merge (it would skip the tests), and never push to, rebase or jump a queued PR.
-  - Risky changes (money, stock, customer contact, data, security) need an independent review that says SHIP before the queue. A FIX FIRST blocks the merge.
-- New features are tried locally before any PR.
+Ayman rarely ships code, but whenever his agents do, the `code-change` and `pr-review-merge` skills apply in full. The essentials:
+
+- **Mothership (Apothekon) merges only through GitHub's merge queue.** Never a direct merge, never `--admin`, and never push to, rebase or jump a queued PR.
+- **Risky changes** (money, stock, customer contact, data, security, migrations) need an independent review that says SHIP before the queue. A FIX FIRST blocks the merge.
+- **New features are tried locally first**, by Ayman, before any PR. No draft PRs.
+- **Test once:** targeted tests locally; CI on the exact head is the full run. Never bare `pytest` in Apothekon.
+- **Small PRs, one area, no BU named in code.**
+- **Repo access** is need-to-know and granted by Arthur.
 
 ## Secrets
 
