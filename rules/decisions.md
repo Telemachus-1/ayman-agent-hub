@@ -6,7 +6,7 @@
 - 2026-11-07 — Scope: all business units, kept general, while Ayman helps every BU before starting his own. (Ayman)
 - 2026-11-07 — Arthur's company rules (Linear policy and the others in `company-rules.md`) are adopted as company law and good hygiene. (Ayman)
 - 2026-11-07 — Ayman does not ship code to Mothership or Ajax. When needed he reviews PRs, merges and applies. (Ayman)
-- 2026-11-07 — Hub repo: private, under Ayman's GitHub account. It may move to Telemachus-1 later. (Ayman)
+- 2026-11-07 — Hub repo: private, under Ayman's GitHub account at first; created under Telemachus-1 the same day. (Ayman)
 - 2026-11-07 — Hard never-dos are fixed as listed in `AGENTS.md`. Nothing else is added. (Ayman)
 - 2026-11-07 — At the start of a new task, agents ask questions until they understand it, then do it. (Ayman)
 - 2026-11-07 — Slack: agents post nowhere by default. Only where Ayman explicitly says. (Ayman)

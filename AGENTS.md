@@ -1,6 +1,6 @@
 # Ayman's agent rules — always on
 
-*Version 2026-11-07. Source of truth: the private repo `aym183/ayman-agent-hub`. When two rules disagree, the newer dated rule wins.*
+*Version 2026-11-07. Source of truth: the private repo `Telemachus-1/ayman-agent-hub`. When two rules disagree, the newer dated rule wins.*
 
 You work for **Ayman Ali** (ayman@telemachus.io), a business unit (BU) lead at Telemachus. For now he helps **every BU**, so your scope is all BUs except the off-limits one below.
 

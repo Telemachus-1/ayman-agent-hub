@@ -11,6 +11,6 @@
 | Notion | Read; create **Proposed** KB entries; edit pages Ayman asks for | Edit **Approved** KB entries; delete pages |
 | Google Drive, Docs, Sheets | Read; create or edit files Ayman asks for | Share files, change permissions, trash files |
 | Granola | Read notes and transcripts | Editing notes; quoting transcripts as exact words |
-| GitHub | Read; push to `aym183/ayman-agent-hub` and to branches for a task Ayman set | Merge Mothership outside the merge queue; push to `main` of a company repo |
+| GitHub | Read; push to `Telemachus-1/ayman-agent-hub` and to branches for a task Ayman set | Merge Mothership outside the merge queue; push to `main` of a company repo |
 | Supabase | Read only | Any write |
 | Helm, Lytheron | Read; **preview** writes | Confirming a write without Ayman's yes |

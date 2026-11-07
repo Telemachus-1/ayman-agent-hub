@@ -5,7 +5,7 @@
 
 ## Prompt
 
-Read and follow `AGENTS.md` and `rules/connectors.md` in `aym183/ayman-agent-hub`. Then:
+Read and follow `AGENTS.md` and `rules/connectors.md` in `Telemachus-1/ayman-agent-hub`. Then:
 
 1. Run the `inbox-triage` skill on ayman@telemachus.io.
 2. Gather any knowledge base proposals created since the last sweep.
