@@ -2,6 +2,10 @@
 
 Shared rules, skills and company knowledge for every agent Ayman runs: Claude Code in Paradev (formerly Superset), Grokbot, and Claude (desktop, mobile and scheduled jobs). Inspired by Arthur's Agent Hub & AI Team Playbook v6.1.
 
+## Install
+
+In Claude Code: `/plugin install ayman-hub --marketplace Telemachus-1/ayman-agent-hub`. For Claude chats, Paradev and Grokbot, see `install/README.md`.
+
 ## Load order
 
 1. `AGENTS.md`: always on. The never-dos and how to work. Short on purpose.
@@ -14,7 +18,8 @@ Shared rules, skills and company knowledge for every agent Ayman runs: Claude Co
 | Folder | What it holds |
 |---|---|
 | `rules/` | `company-rules.md`, `connectors.md`, `decisions.md` |
-| `skills/` | Live skills: `inbox-triage`, `kb-propose` |
+| `skills/` | Live skills (9), loaded by the `ayman-hub` plugin |
+| `.claude-plugin/`, `hooks/` | Plugin and marketplace files, and the start-up hook that loads `AGENTS.md` |
 | `proposals/` | Draft skills from agents, reviewed weekly. Not live. |
 | `jobs/` | Prompts for scheduled jobs: daily sweep, weekly skill miner |
 | `kb/` | Knowledge base seed and export |
@@ -23,4 +28,4 @@ Shared rules, skills and company knowledge for every agent Ayman runs: Claude Co
 
 ## Changing a rule
 
-Edit the file, add a dated line to `rules/decisions.md`, and bump the version date in `AGENTS.md`. Newest dated rule wins.
+Edit the file, add a dated line to `rules/decisions.md`, and bump the version date in `AGENTS.md`. Newest dated rule wins. Keep `AGENTS.md` under 10,000 characters.

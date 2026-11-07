@@ -1,0 +1,15 @@
+{
+  "name": "ayman-agent-hub",
+  "description": "Ayman's agent hub: Telemachus rules, skills and knowledge for every agent",
+  "owner": {
+    "name": "Ayman Ali",
+    "email": "ayman@telemachus.io"
+  },
+  "plugins": [
+    {
+      "name": "ayman-hub",
+      "source": "./",
+      "description": "Always-on Telemachus rules plus skills for Linear, research, supplier prep, Helm, code changes, PR review, inbox triage and the knowledge base"
+    }
+  ]
+}

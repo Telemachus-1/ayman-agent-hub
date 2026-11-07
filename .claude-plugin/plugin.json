@@ -1,0 +1,9 @@
+{
+  "name": "ayman-hub",
+  "description": "Always-on Telemachus rules plus skills for Linear, research, supplier prep, Helm, code changes, PR review, inbox triage and the knowledge base",
+  "author": {
+    "name": "Ayman Ali",
+    "email": "ayman@telemachus.io"
+  },
+  "homepage": "https://github.com/Telemachus-1/ayman-agent-hub"
+}

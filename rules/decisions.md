@@ -25,3 +25,5 @@
 - 2026-11-07 — Arthur's Linear agent files (29 Aug versions) stored in `reference/arthur-linear-2026-08-29/`; still-current rules folded into `linear-ask` and `linear-card-work`. Where they conflict with the live Linear docs (TEL front door, leads, labels), the live docs win as the newer rule. (Ayman)
 - 2026-11-07 — Knowledge base created in Notion. Ayman's own notes are Approved; entries drawn from Arthur's docs start as Proposed. (Ayman)
 - 2026-11-07 — Daily Linear check: not now. Proposal parked in `proposals/`, not added to the daily sweep. (Ayman)
+- 2026-11-07 — Daily Linear check not wanted for now; the proposal stays in `proposals/` as deferred. (Ayman)
+- 2026-11-07 — The repo is packaged as a Claude plugin marketplace (`ayman-agent-hub`), with one plugin (`ayman-hub`) that loads every skill and adds a start-up hook putting `AGENTS.md` in every Claude Code session. (Ayman)
