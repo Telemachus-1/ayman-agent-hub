@@ -1,0 +1,23 @@
+# Decisions log
+
+*One line per decision: date, decision, decided by. Newest at the bottom. Search this before deciding anything.*
+
+- 2026-11-07 — The hub is Ayman's own, inspired by Arthur's setup. Arthur's sign-off is not needed. Tools connect directly to Ayman's accounts. (Ayman)
+- 2026-11-07 — Scope: all business units, kept general, while Ayman helps every BU before starting his own. (Ayman)
+- 2026-11-07 — Arthur's company rules (Linear policy and the others in `company-rules.md`) are adopted as company law and good hygiene. (Ayman)
+- 2026-11-07 — Ayman does not ship code to Mothership or Ajax. When needed he reviews PRs, merges and applies. (Ayman)
+- 2026-11-07 — Hub repo: private, under Ayman's GitHub account. It may move to Telemachus-1 later. (Ayman)
+- 2026-11-07 — Hard never-dos are fixed as listed in `AGENTS.md`. Nothing else is added. (Ayman)
+- 2026-11-07 — At the start of a new task, agents ask questions until they understand it, then do it. (Ayman)
+- 2026-11-07 — Slack: agents post nowhere by default. Only where Ayman explicitly says. (Ayman)
+- 2026-11-07 — Linear cards for work longer than a session, not for quick admin. (Ayman)
+- 2026-11-07 — Knowledge base in Notion, for Ayman only for now; teammates may read and edit later. Entries are approved with one reply. Seeded from Arthur's docs; agents use all available context (Granola, Drive, Slack and the rest). (Ayman)
+- 2026-11-07 — Mailbox in scope: ayman@telemachus.io only. (Ayman)
+- 2026-11-07 — Inbox clean-up: label must-respond or irrelevant; archive newsletters and promotions; archive accepted meeting invites, keep declines in the inbox; no reply drafts yet; action items go in the daily update; never trash, never unsubscribe. (Ayman)
+- 2026-11-07 — No other admin jobs for now. (Ayman)
+- 2026-11-07 — Skill miner starts by learning from Ayman's sent emails and sent Slack messages, to learn how he writes. Drafting in his tone comes later. Proposed skills are reviewed weekly. (Ayman)
+- 2026-11-07 — Nothing personal goes into the hub or the knowledge base. (Ayman)
+- 2026-11-07 — Reply style approved: lead with the answer; decisions on their own line starting `DECISION:`. (Ayman)
+- 2026-11-07 — Extra connector limits approved: no accepting calendar invites, no sharing Drive files, no Slack reactions, no marking mail as spam, no pushing to `main` on company repos. (Ayman)
+- 2026-11-07 — The daily update runs as a Claude scheduled task. Ayman reads it and replies in the same chat (for example to approve KB entries). (Ayman)
+- 2026-11-07 — Knowledge base created in Notion. Ayman's own notes are Approved; entries drawn from Arthur's docs start as Proposed. (Ayman)
