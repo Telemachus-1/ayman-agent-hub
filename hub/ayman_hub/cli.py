@@ -7,6 +7,8 @@
     ayman-hub client add <name>                prints a new hub key ONCE
     ayman-hub client revoke <name>
     ayman-hub client list
+    ayman-hub login  <spoke> [--listen]        one-time sign-in for auth = "oauth" spokes
+    ayman-hub logout <spoke>                   forget that sign-in
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import sys
 from pathlib import Path
 
 from ayman_hub.config import ConfigError, hub_home, load_config
+from ayman_hub.oauth import FileTokenStorage
 from ayman_hub.state import AuditLog, ClientStore, KillSwitch
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "spokes.toml"
@@ -36,6 +39,11 @@ def _doctor(config_path: Path) -> int:
     for spoke in config.spokes.values():
         state = "on " if spoke.enabled else "off"
         print(f"  [{state}] {spoke.name:10} {spoke.transport:5} {spoke.mode:10} {spoke.description}")
+        if spoke.auth == "oauth":
+            signed = FileTokenStorage(home, spoke).signed_in()
+            print(f"         sign-in: {'yes' if signed else 'NO (ayman-hub login ' + spoke.name + ')'}")
+            if spoke.enabled and not signed:
+                problems += 1
         if not spoke.enabled:
             continue
         for name in spoke.secret_env_names():
@@ -85,6 +93,14 @@ def main(argv: list[str] | None = None) -> int:
     cr = csub.add_parser("revoke")
     cr.add_argument("name")
     csub.add_parser("list")
+    li = sub.add_parser("login")
+    li.add_argument("spoke")
+    li.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    li.add_argument("--listen", action="store_true",
+                    help="catch the browser's return on the loopback redirect address instead of pasting it")
+    lo = sub.add_parser("logout")
+    lo.add_argument("spoke")
+    lo.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     args = p.parse_args(argv)
     home = hub_home()
 
@@ -98,6 +114,29 @@ def main(argv: list[str] | None = None) -> int:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
         app = create_app(load_config(args.config))
         uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+        return 0
+    if args.cmd in ("login", "logout"):
+        config = load_config(args.config)
+        spoke = config.spokes.get(args.spoke)
+        if spoke is None or spoke.auth != "oauth":
+            print(f"'{args.spoke}' is not a sign-in spoke (needs auth = \"oauth\" in spokes.toml)")
+            return 2
+        if args.cmd == "logout":
+            gone = FileTokenStorage(home, spoke).forget()
+            print(f"sign-in for '{spoke.name}' {'removed' if gone else 'was not stored'}")
+            return 0
+        import anyio
+
+        from ayman_hub.oauth import login
+
+        try:
+            n = anyio.run(lambda: login(spoke, home, listen=args.listen))
+        except Exception as e:  # message only: never tokens
+            from ayman_hub.upstream import describe_error
+
+            print(f"sign-in failed: {describe_error(e)}")
+            return 1
+        print(f"signed in to '{spoke.name}': {n} tools available. The sign-in is stored owner-only in {home}/oauth/.")
         return 0
     if args.cmd == "doctor":
         return _doctor(args.config)

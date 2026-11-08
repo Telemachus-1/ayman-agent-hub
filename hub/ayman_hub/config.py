@@ -12,9 +12,13 @@ import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlparse
 
 VALID_TRANSPORTS = {"http", "stdio"}
 VALID_MODES = {"read-only", "read-write"}
+VALID_AUTH = {"none", "bearer", "oauth"}
+VALID_TOKEN_AUTH = {"client_secret_post", "client_secret_basic"}
+DEFAULT_REDIRECT = "http://127.0.0.1:8743/callback"
 # Lowercase words joined by single underscores; "__" is reserved as the
 # separator between spoke and tool in the names agents see.
 SPOKE_NAME = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
@@ -41,11 +45,22 @@ class Spoke:
     allow_destructive: tuple[str, ...] = ()
     clients: tuple[str, ...] = ()
     description: str = ""
+    # auth: "bearer" sends Authorization: Bearer $auth_env; "oauth" uses the one-time
+    # `ayman-hub login <spoke>` sign-in, stored in the hub home and refreshed automatically.
+    auth: str = "none"
+    oauth_scope: str | None = None
+    oauth_client_id_env: str | None = None  # pre-registered app (e.g. Slack); else DCR
+    oauth_client_secret_env: str | None = None
+    oauth_token_auth: str = "client_secret_post"
+    oauth_redirect_uri: str = DEFAULT_REDIRECT
 
     def secret_env_names(self) -> list[str]:
         names = list(self.header_env.values()) + list(self.env_passthrough)
         if self.auth_env:
             names.insert(0, self.auth_env)
+        for name in (self.oauth_client_id_env, self.oauth_client_secret_env):
+            if name:
+                names.append(name)
         return names
 
 
@@ -79,7 +94,8 @@ def _spoke(name: str, raw: dict) -> Spoke:
     known = {
         "enabled", "transport", "url", "command", "args", "auth_env", "header_env",
         "env_passthrough", "mode", "allow_tools", "deny_tools", "allow_destructive",
-        "clients", "description",
+        "clients", "description", "auth", "oauth_scope", "oauth_client_id_env",
+        "oauth_client_secret_env", "oauth_token_auth", "oauth_redirect_uri",
     }
     unknown = set(raw) - known
     if unknown:
@@ -99,6 +115,29 @@ def _spoke(name: str, raw: dict) -> Spoke:
         raise ConfigError(f"{where}: http spokes need a url starting with https://")
     if enabled and transport == "stdio" and not isinstance(command, str):
         raise ConfigError(f"{where}: stdio spokes need a command")
+    auth = raw.get("auth", "bearer" if raw.get("auth_env") else "none")
+    if auth not in VALID_AUTH:
+        raise ConfigError(f"{where}: auth must be one of {sorted(VALID_AUTH)}")
+    if auth == "bearer" and not raw.get("auth_env"):
+        raise ConfigError(f"{where}: auth = \"bearer\" needs auth_env")
+    if auth == "oauth":
+        if raw.get("auth_env"):
+            raise ConfigError(f"{where}: use auth_env or auth = \"oauth\", not both")
+        if transport != "http":
+            raise ConfigError(f"{where}: auth = \"oauth\" only works on http spokes")
+    elif any(k.startswith("oauth_") for k in raw):
+        raise ConfigError(f"{where}: oauth_* keys need auth = \"oauth\"")
+    if bool(raw.get("oauth_client_id_env")) != bool(raw.get("oauth_client_secret_env")):
+        raise ConfigError(f"{where}: set both oauth_client_id_env and oauth_client_secret_env, or neither")
+    token_auth = raw.get("oauth_token_auth", "client_secret_post")
+    if token_auth not in VALID_TOKEN_AUTH:
+        raise ConfigError(f"{where}: oauth_token_auth must be one of {sorted(VALID_TOKEN_AUTH)}")
+    redirect = raw.get("oauth_redirect_uri", DEFAULT_REDIRECT)
+    parsed = urlparse(redirect) if isinstance(redirect, str) else None
+    if not parsed or not (
+        parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"})
+    ):
+        raise ConfigError(f"{where}: oauth_redirect_uri must be https:// or a loopback http:// address")
     header_env = raw.get("header_env", {})
     if not isinstance(header_env, dict) or not all(
         isinstance(k, str) and isinstance(v, str) for k, v in header_env.items()
@@ -121,6 +160,12 @@ def _spoke(name: str, raw: dict) -> Spoke:
         allow_destructive=_tuple(raw.get("allow_destructive"), f"{where}.allow_destructive"),
         clients=_tuple(raw.get("clients"), f"{where}.clients"),
         description=str(raw.get("description", "")),
+        auth=auth,
+        oauth_scope=raw.get("oauth_scope"),
+        oauth_client_id_env=raw.get("oauth_client_id_env"),
+        oauth_client_secret_env=raw.get("oauth_client_secret_env"),
+        oauth_token_auth=token_auth,
+        oauth_redirect_uri=redirect,
     )
 
 

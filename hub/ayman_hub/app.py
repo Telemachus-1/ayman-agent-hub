@@ -57,7 +57,7 @@ class KeyAuth:
 def create_app(config: HubConfig, home: Path | None = None) -> Starlette:
     home = home or hub_home()
     clients, kill, audit = ClientStore(home), KillSwitch(home), AuditLog(home)
-    upstreams = {s.name: Upstream(s) for s in config.enabled_spokes()}
+    upstreams = {s.name: Upstream(s, home) for s in config.enabled_spokes()}
     gateway = Gateway(config, upstreams, kill, audit)
     server = gateway.build_server()
 

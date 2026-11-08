@@ -23,8 +23,8 @@ Agents only *see* the tools they're allowed to call. Tools are named `<spoke>__<
 | Path | What |
 |---|---|
 | `spokes.toml` | The services, in the agreed order, with each one's rules. All switched off until their step |
-| `ayman_hub/` | The hub: `config`, `policy`, `state` (keys, audit log, kill switch), `upstream`, `gateway`, `app`, `cli` |
-| `tests/` | 40 tests, including an end-to-end run through a real hub with a fake service |
+| `ayman_hub/` | The hub: `config`, `policy`, `state` (keys, audit log, kill switch), `oauth` (sign-in), `upstream`, `gateway`, `app`, `cli` |
+| `tests/` | 53 tests, including end-to-end runs through a real hub with a fake service and a fake sign-in service |
 
 Runtime state lives **outside the repo**, in `AYMAN_HUB_HOME` (default `~/.ayman-hub`), all owner-only:
 
@@ -33,6 +33,7 @@ Runtime state lives **outside the repo**, in `AYMAN_HUB_HOME` (default `~/.ayman
 | `clients.json` | The hash of each client key, never the key itself |
 | `audit.jsonl` | The audit log |
 | `OFF` | Present when the kill switch is on |
+| `oauth/<spoke>.json` | A sign-in spoke's tokens and the service's token address. A pre-registered app's secret (Slack) is never written here |
 
 ## Commands
 
@@ -43,6 +44,8 @@ python3 -m ayman_hub client revoke grokbot  # cut off one app
 python3 -m ayman_hub off                    # kill switch: refuse every call
 python3 -m ayman_hub on
 python3 -m ayman_hub status                 # switch, clients, last audit lines
+python3 -m ayman_hub login notion           # one-time sign-in for auth = "oauth" spokes
+python3 -m ayman_hub logout notion          # forget that sign-in
 python3 -m ayman_hub serve --port 8742      # run it
 python3 -m pytest                           # tests
 ```
@@ -50,7 +53,7 @@ python3 -m pytest                           # tests
 ## Adding a spoke
 
 1. Fill in its block in `spokes.toml`. Real keys never go there: `auth_env` names the environment variable that holds the key.
-2. Put the key in the server's owner-only environment file.
+2. Key spokes: put the key in the server's owner-only environment file. Sign-in spokes (`auth = "oauth"`): run `login <spoke>` on the server, open the link, approve as Ayman, and paste back the address the browser lands on (an error page is fine; the code is in the address). The hub then refreshes the sign-in on its own. If it ever lapses, the spoke shows "run `ayman-hub login <spoke>`" in `hub__status`; the hub never waits for a person.
 3. Run `doctor`. Switch the spoke on (`enabled = true`), restart, and check `hub__status`.
 4. Test a read, an allowed write and a blocked call from each client, and check the audit log.
 5. Remove that service's direct connector from each tool.
@@ -62,12 +65,13 @@ Changing what's blocked in code (`HARD_DENY_TOKENS` in `policy.py`) needs a revi
 | Step | Spoke | Status |
 |---|---|---|
 | 0 | Hub skeleton: keys, policy, audit, kill switch, doctor | **Built and tested** |
-| 1 | Linear | Config ready; needs `LINEAR_API_KEY` on the server |
-| 2 | Notion | Auth method to confirm |
-| 3 | Granola | Auth method to confirm |
+| 0b | Sign-in (`login`) for services without API keys, with automatic refresh | **Built and tested** |
+| 1 | Linear | Config ready; API key as bearer (confirmed). Needs `LINEAR_API_KEY` on the server |
+| 2 | Notion | Config ready; sign-in only (confirmed). `login notion` on deploy day |
+| 3 | Granola | Config ready; sign-in only (confirmed). `login granola` on deploy day |
 | 4 | Google: Drive, Docs, Sheets, Slides, Calendar | Hub-owned spoke, to build |
 | 5 | Gmail: ayman@ plus six logistics@ group mailboxes | Hub-owned spoke, to build |
-| 6 | Slack | To build: read, plus a reviewed two-step post to bot channels |
+| 6 | Slack | Read config ready (sign-in through our own Slack app with MCP on: needs its client id and secret). Still to build: the reviewed two-step post to bot channels |
 | 7 | Helm | Needs a server login from Arthur |
 | 8 | WhatsApp (optional) | Separate decision |
 | — | Hosting on a company server, public HTTPS, `allowed_hosts` | At the end |

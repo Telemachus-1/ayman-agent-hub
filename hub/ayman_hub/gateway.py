@@ -17,7 +17,8 @@ from ayman_hub import __version__
 from ayman_hub.config import HubConfig
 from ayman_hub.policy import ALLOW, decide
 from ayman_hub.state import AuditLog, KillSwitch
-from ayman_hub.upstream import Upstream
+from ayman_hub.oauth import NeedsLogin
+from ayman_hub.upstream import Upstream, root_error
 
 SEP = "__"
 MAX_TOOL_NAME = 64
@@ -111,8 +112,11 @@ class Gateway:
             result = await up.call(tool_name, arguments)
         except Exception as e:
             self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=True,
-                             reason="allowed", started=started, error=type(e).__name__)
-            return _text(f"The {spoke_name} service failed: {type(e).__name__}. Nothing was retried.", error=True)
+                             reason="allowed", started=started, error=type(root_error(e)).__name__)
+            root = root_error(e)
+            hint = f" {root}" if isinstance(root, NeedsLogin) else ""
+            return _text(f"The {spoke_name} service failed: {type(root).__name__}.{hint} Nothing was retried.",
+                         error=True)
         self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=True,
                          reason="allowed", started=started,
                          error="service returned an error" if result.is_error else None)

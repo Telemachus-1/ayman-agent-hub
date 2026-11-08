@@ -30,6 +30,17 @@ def _private_dir(path: Path) -> Path:
     return path
 
 
+def _write_private(path: Path, text: str) -> None:
+    """Write a file only the owner can read, atomically. The file is never briefly world-readable."""
+    _private_dir(path.parent)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(text)
+    os.chmod(tmp, 0o600)
+    tmp.replace(path)
+
+
 def _hash(key: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()
 
@@ -46,10 +57,7 @@ class ClientStore:
         return json.loads(self.path.read_text())
 
     def _save(self, data: dict) -> None:
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
-        os.chmod(tmp, 0o600)
-        tmp.replace(self.path)
+        _write_private(self.path, json.dumps(data, indent=2, sort_keys=True))
 
     def add(self, name: str) -> str:
         data = self._load()

@@ -19,7 +19,11 @@ name = "ayman-hub"
 # Set to the public host name before the hub goes on the internet, e.g. ["hub.example.com"].
 allowed_hosts = []
 
+# auth:              bearer (default when auth_env is set) -> Authorization: Bearer $auth_env
+#                    oauth -> one-time `ayman-hub login <spoke>`; stored owner-only, refreshed on its own
+
 # 1. Linear: cards and comments for longer work. Deletes blocked (also blocked in code).
+#    Linear's MCP takes a personal API key as a bearer token (confirmed 8 Nov 2026).
 [spokes.linear]
 enabled = false
 transport = "http"
@@ -30,23 +34,23 @@ deny_tools = ["*delete*", "*archive*", "*retire*"]
 description = "Linear (step 1)"
 
 # 2. Notion: knowledge base. Read; create pages (Proposed KB entries); no deletes or moves.
-#    Auth method to confirm in step 2 (Notion's hosted MCP uses sign-in; the open-source
-#    server takes an integration token).
+#    Notion's hosted MCP takes sign-in only, no tokens (confirmed 8 Nov 2026). Sign in as Ayman.
 [spokes.notion]
 enabled = false
 transport = "http"
-url = ""
-auth_env = "NOTION_TOKEN"
+url = "https://mcp.notion.com/mcp"
+auth = "oauth"
 mode = "read-write"
 deny_tools = ["*delete*", "*move*", "*duplicate*", "*share*", "*restore*"]
 description = "Notion (step 2)"
 
 # 3. Granola: meeting notes and transcripts, read-only.
+#    Granola's MCP takes browser sign-in only (confirmed 8 Nov 2026).
 [spokes.granola]
 enabled = false
 transport = "http"
-url = ""
-auth_env = "GRANOLA_TOKEN"
+url = "https://mcp.granola.ai/mcp"
+auth = "oauth"
 mode = "read-only"
 description = "Granola (step 3)"
 
@@ -74,15 +78,21 @@ deny_tools = ["*spam*", "*filter*", "*forward*", "*vacation*"]
 description = "Gmail, 7 mailboxes (step 5)"
 
 # 6. Slack: read everything; posting only through a reviewed two-step tool, bot channels only.
+#    Slack's MCP needs our own Slack app with MCP turned on; its client id and secret come
+#    from the env file and are never written to the hub home (confirmed 8 Nov 2026).
+#    On deploy day: add the redirect address below to the Slack app, then `ayman-hub login slack`.
 [spokes.slack]
 enabled = false
 transport = "http"
-url = ""
-auth_env = "SLACK_TOKEN"
+url = "https://mcp.slack.com/mcp"
+auth = "oauth"
+oauth_client_id_env = "SLACK_OAUTH_CLIENT_ID"
+oauth_client_secret_env = "SLACK_OAUTH_CLIENT_SECRET"
 mode = "read-only"
 description = "Slack (step 6)"
 
 # 7. Helm: look-ups; writes only as previews. Helm's own preview -> confirm token stays the second lock.
+#    Endpoint and login: still to get from Arthur (a server login for the hub).
 [spokes.helm]
 enabled = false
 transport = "http"

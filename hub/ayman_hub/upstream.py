@@ -5,29 +5,44 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import AsyncExitStack
+from pathlib import Path
 
 import mcp_types as types
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
-from ayman_hub.config import Spoke
+from ayman_hub.config import Spoke, hub_home
+from ayman_hub.oauth import FileTokenStorage, HubOAuthProvider, NeedsLogin
 
 log = logging.getLogger("ayman_hub.upstream")
+
+
+def root_error(e: BaseException) -> BaseException:
+    """The real error inside task-group wrappers, so messages say what went wrong."""
+    while isinstance(e, BaseExceptionGroup) and len(e.exceptions) == 1:
+        e = e.exceptions[0]
+    return e
+
+
+def describe_error(e: BaseException) -> str:
+    e = root_error(e)
+    return f"{type(e).__name__}: {e}"[:300]
 
 
 class Upstream:
     """One live session to one spoke. If it fails to start, the spoke is marked down and offers no tools."""
 
-    def __init__(self, spoke: Spoke):
+    def __init__(self, spoke: Spoke, home: Path | None = None):
         self.spoke = spoke
+        self.home = home
         self.session: ClientSession | None = None
         self.tools: dict[str, types.Tool] = {}
         self.error: str | None = None
 
     def _headers(self) -> dict[str, str]:
         headers: dict[str, str] = {}
-        if self.spoke.auth_env:
+        if self.spoke.auth == "bearer" and self.spoke.auth_env:
             token = os.environ.get(self.spoke.auth_env)
             if not token:
                 raise RuntimeError(f"environment variable {self.spoke.auth_env} is not set")
@@ -42,7 +57,13 @@ class Upstream:
     async def start(self, stack: AsyncExitStack) -> None:
         try:
             if self.spoke.transport == "http":
-                client = create_mcp_http_client(headers=self._headers())
+                auth = None
+                if self.spoke.auth == "oauth":
+                    storage = FileTokenStorage(self.home or hub_home(), self.spoke)
+                    if not storage.signed_in():
+                        raise NeedsLogin(f"not signed in: run `ayman-hub login {self.spoke.name}`")
+                    auth = HubOAuthProvider(self.spoke, storage)
+                client = create_mcp_http_client(headers=self._headers(), auth=auth)
                 await stack.enter_async_context(client)
                 read, write = await stack.enter_async_context(
                     streamable_http_client(self.spoke.url, http_client=client)
@@ -66,7 +87,7 @@ class Upstream:
             self.session = None
             self.tools = {}
             # Never echo values: the message names variables, not their contents.
-            self.error = f"{type(e).__name__}: {e}"[:300]
+            self.error = describe_error(e)
             log.warning("spoke %s down: %s", self.spoke.name, self.error)
 
     async def refresh_tools(self) -> None:
