@@ -1,0 +1,26 @@
+[project]
+name = "ayman-hub"
+version = "0.1.0"
+description = "One MCP endpoint in front of every service Ayman's agents use, with per-client keys, policy, audit log and a kill switch."
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=2.3,<3",
+    "starlette>=1.0",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+ayman-hub = "ayman_hub.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ayman_hub"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,102 @@
+# ayman-hub spokes: one block per service, in the agreed connection order (8 Nov 2026).
+#
+# Every spoke stays `enabled = false` until its step is built and tested.
+# Real keys never go in this file: `auth_env` / `header_env` / `env_passthrough`
+# name environment variables, loaded on the server from an owner-only env file.
+#
+# Agents see each tool as <spoke>__<tool>. On top of what's set here, the hub
+# blocks send, pay and delete-type tools in code (ayman_hub/policy.py).
+#
+# mode:              read-only  -> only tools the service marks read-only (or named get/list/search...)
+#                    read-write -> everything not denied
+# deny_tools:        glob patterns that are always refused on this spoke
+# allow_tools:       if set, only these
+# allow_destructive: tools the service marks destructive that are still allowed
+# clients:           if set, only these hub clients may use the spoke
+
+[hub]
+name = "ayman-hub"
+# Set to the public host name before the hub goes on the internet, e.g. ["hub.example.com"].
+allowed_hosts = []
+
+# 1. Linear: cards and comments for longer work. Deletes blocked (also blocked in code).
+[spokes.linear]
+enabled = false
+transport = "http"
+url = "https://mcp.linear.app/mcp"
+auth_env = "LINEAR_API_KEY"
+mode = "read-write"
+deny_tools = ["*delete*", "*archive*", "*retire*"]
+description = "Linear (step 1)"
+
+# 2. Notion: knowledge base. Read; create pages (Proposed KB entries); no deletes or moves.
+#    Auth method to confirm in step 2 (Notion's hosted MCP uses sign-in; the open-source
+#    server takes an integration token).
+[spokes.notion]
+enabled = false
+transport = "http"
+url = ""
+auth_env = "NOTION_TOKEN"
+mode = "read-write"
+deny_tools = ["*delete*", "*move*", "*duplicate*", "*share*", "*restore*"]
+description = "Notion (step 2)"
+
+# 3. Granola: meeting notes and transcripts, read-only.
+[spokes.granola]
+enabled = false
+transport = "http"
+url = ""
+auth_env = "GRANOLA_TOKEN"
+mode = "read-only"
+description = "Granola (step 3)"
+
+# 4. Google: Drive, Docs, Sheets, Slides and Calendar. Read; create and edit files;
+#    no sharing, permission changes or trash; calendar read-only for now.
+#    Built in step 4 as a hub-owned spoke, sharing one Google sign-in with Gmail.
+[spokes.google]
+enabled = false
+transport = "stdio"
+command = ""
+env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"]
+mode = "read-write"
+deny_tools = ["*share*", "*permission*", "*trash*", "calendar_*create*", "calendar_*update*", "calendar_*respond*"]
+description = "Drive, Docs, Sheets, Slides, Calendar (step 4)"
+
+# 5. Gmail: ayman@telemachus.io plus the six logistics@ group mailboxes that arrive in it.
+#    Read, search by mailbox, label, archive, draft. No send tool exists. Never retries a 429.
+[spokes.gmail]
+enabled = false
+transport = "stdio"
+command = ""
+env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"]
+mode = "read-write"
+deny_tools = ["*spam*", "*filter*", "*forward*", "*vacation*"]
+description = "Gmail, 7 mailboxes (step 5)"
+
+# 6. Slack: read everything; posting only through a reviewed two-step tool, bot channels only.
+[spokes.slack]
+enabled = false
+transport = "http"
+url = ""
+auth_env = "SLACK_TOKEN"
+mode = "read-only"
+description = "Slack (step 6)"
+
+# 7. Helm: look-ups; writes only as previews. Helm's own preview -> confirm token stays the second lock.
+[spokes.helm]
+enabled = false
+transport = "http"
+url = ""
+auth_env = "HELM_TOKEN"
+mode = "read-write"
+deny_tools = ["payment_runs", "*pay*", "*refund*"]
+description = "Helm (step 7)"
+
+# 8. WhatsApp (optional, separate decision): read-only, send tools removed.
+[spokes.whatsapp]
+enabled = false
+transport = "stdio"
+command = ""
+mode = "read-only"
+deny_tools = ["send_*", "download_media"]
+description = "WhatsApp, optional (step 8)"

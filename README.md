@@ -25,6 +25,7 @@ In Claude Code: `/plugin install ayman-hub --marketplace Telemachus-1/ayman-agen
 | `kb/` | Knowledge base seed and export |
 | `reference/` | Source documents the skills were built from (for example Arthur's Linear files). Agents follow the skills, not these. |
 | `install/` | How each tool loads the hub |
+| `hub/` | The hub MCP: one endpoint for every service, with keys, policy, audit log and kill switch (see `hub/README.md`) |
 
 ## Changing a rule
 
