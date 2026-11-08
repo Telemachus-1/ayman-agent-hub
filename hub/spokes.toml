@@ -187,6 +187,48 @@ helm_admin = ["help",
   "calendar_events_range", "errors_recent", "exceptions", "identity_review_queue", "parity_status",
   "screen_read", "sql_read", "whats_changed", "whoami", "report_problem"]
 
+# 7b. Lytheron (the older ops system). Sign-in as Ayman: `ayman-hub login lytheron`.
+#    Like Helm, it issues no refresh token. The sign-in asks Lytheron only for read plus the
+#    customer, data and order write scopes, so invoicing, procurement, comms, Amazon and
+#    fulfilment writes are refused by Lytheron itself, not just by the hub.
+#    Tools read from Lytheron's own list on 8 Nov 2026. Left out on purpose, whatever is
+#    approved: POs, invoices and their emails, dispatch, goods in, transfers, Amazon FBA
+#    steps, notifications, syncs, landed-cost and lot changes, exclusivity commitments,
+#    bulk repricing, customer terms, and approving, rejecting or cancelling orders.
+#    Writes preview first; Claude and Grokbot may confirm only after Ayman's exact yes.
+[spokes.lytheron]
+enabled = false
+transport = "http"
+url = "https://lytheron.io/mcp"
+auth = "oauth"
+oauth_scope = "read write:crm write:data write:orders"
+oauth_refresh = false
+mode = "read-write"
+allow_tools = [
+  # reads whose names don't start with a read verb
+  "analytics_query", "assess_draft_order", "backend_health", "bundle_detail", "catalogue_entry",
+  "channel_breakdown", "customer_lookup", "distributor_offer", "exclusivity_group", "exclusivity_groups",
+  "exclusivity_live", "exclusivity_proposed", "fulfilment_status", "goods_to_arrive", "inventory_status",
+  "inventory_status_bulk", "invoice_document", "invoice_summaries_by_customer", "listing_status",
+  "lot_detail", "order_lookup", "orders_by_state", "pricing_lookup", "pricing_lookup_bulk",
+  "print_run_status", "profit_summary", "purchase_order_status", "repricer_explain", "restock_suggestions",
+  "review_queue", "shipment_tracking", "stock_by_warehouse", "tier_prices", "transfer_status",
+  "ungating_invoice", "ungating_order_lines", "amazon_fba_inbound_status", "amazon_fba_placement_options",
+  "amazon_fba_customer_placement_options", "amazon_fba_transport_quotes",
+  # writes (preview first)
+  "add_note", "edit_customer", "add_catalogue_entry", "edit_catalogue_entry", "correct_product_title",
+  "create_draft_order", "edit_order_lines", "pin_tier_price", "unpin_tier_price", "record_negotiated_price",
+  "approve_queued_price", "reject_queued_price",
+]
+allow_destructive = [
+  "add_note", "edit_customer", "add_catalogue_entry", "edit_catalogue_entry", "correct_product_title",
+  "create_draft_order", "edit_order_lines", "pin_tier_price", "unpin_tier_price", "record_negotiated_price",
+  "approve_queued_price", "reject_queued_price",
+]
+confirm_args = ["confirm", "confirm_token"]
+confirm_clients = ["claude", "grokbot"]
+description = "Lytheron (step 7b)"
+
 # 8. WhatsApp (optional, separate decision): read-only, send tools removed.
 [spokes.whatsapp]
 enabled = false

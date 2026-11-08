@@ -75,6 +75,7 @@ Changing what's blocked in code (`HARD_DENY_TOKENS` in `policy.py`) needs a revi
 | 5 | Gmail: ayman@ plus six logistics@ group mailboxes | **Built and tested** (read, search by mailbox, label, archive; no send or draft). Same Google sign-in |
 | 6 | Slack | Read config ready (sign-in through our own Slack app with MCP on: needs its client id and secret). Still to build: the reviewed two-step post to bot channels |
 | 7 | Helm | Config ready: https://apothekon.io/mcp, sign-in approved by Ayman (no refresh token, so re-sign-in when it lapses). Allowed actions set from Helm's own menus; money, PO, invoice-issuing, ledger, warehouse-job and outside-email actions left out |
+| 7b | Lytheron | Config ready: https://lytheron.io/mcp, sign-in approved by Ayman, asking Lytheron only for read plus customer, data and order writes (no refresh token). Reads plus notes, customer and catalogue edits, draft orders and price pins; POs, invoices, dispatch, goods in, Amazon FBA, notifications and syncs left out |
 | 8 | WhatsApp (optional) | Separate decision |
 | — | Hosting on a company server, public HTTPS, `allowed_hosts` | At the end |
 
