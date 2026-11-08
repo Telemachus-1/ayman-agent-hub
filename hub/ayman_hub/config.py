@@ -53,6 +53,7 @@ class Spoke:
     oauth_client_secret_env: str | None = None
     oauth_token_auth: str = "client_secret_post"
     oauth_redirect_uri: str = DEFAULT_REDIRECT
+    oauth_refresh: bool = True  # False for services that issue no refresh tokens (Helm)
     # Argument checks (policy.decide_call): menu tools' allowed `action` values, and
     # confirm-type arguments only some clients may set.
     allow_actions: dict[str, tuple[str, ...]] = field(default_factory=dict)
@@ -101,7 +102,7 @@ def _spoke(name: str, raw: dict) -> Spoke:
         "env_passthrough", "mode", "allow_tools", "deny_tools", "allow_destructive",
         "clients", "description", "auth", "oauth_scope", "oauth_client_id_env",
         "oauth_client_secret_env", "oauth_token_auth", "oauth_redirect_uri",
-        "allow_actions", "confirm_args", "confirm_clients",
+        "allow_actions", "confirm_args", "confirm_clients", "oauth_refresh",
     }
     unknown = set(raw) - known
     if unknown:
@@ -180,6 +181,7 @@ def _spoke(name: str, raw: dict) -> Spoke:
         oauth_client_secret_env=raw.get("oauth_client_secret_env"),
         oauth_token_auth=token_auth,
         oauth_redirect_uri=redirect,
+        oauth_refresh=bool(raw.get("oauth_refresh", True)),
         allow_actions={k: tuple(v) for k, v in allow_actions.items()},
         confirm_args=_tuple(raw.get("confirm_args"), f"{where}.confirm_args"),
         confirm_clients=_tuple(raw.get("confirm_clients"), f"{where}.confirm_clients"),

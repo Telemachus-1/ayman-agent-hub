@@ -176,7 +176,7 @@ class HubOAuthProvider(OAuthClientProvider):
             client_metadata=OAuthClientMetadata(
                 client_name="Ayman agent hub",
                 redirect_uris=[spoke.oauth_redirect_uri],
-                grant_types=["authorization_code", "refresh_token"],
+                grant_types=["authorization_code", "refresh_token"] if spoke.oauth_refresh else ["authorization_code"],
                 response_types=["code"],
                 scope=spoke.oauth_scope,
                 token_endpoint_auth_method=spoke.oauth_token_auth if spoke.oauth_client_id_env else "none",

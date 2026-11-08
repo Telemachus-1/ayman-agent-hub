@@ -26,7 +26,7 @@ def spoke(**kw):
     "\u0455end_email", "ｓｅｎｄ_mail", "payment_runs",
     # one-way verbs added after the review
     "slack_schedule_message", "merge_diff", "share_issue", "ShareFile", "notion-calendar-cancel-events",
-    "invite_user", "publish_page", "post_message", "submit_form", "unshare_issue",
+    "invite_user", "publish_page", "post_message", "submit_form", "unshare_issue", "transmit_po",
 ])
 def test_hard_deny_blocks_one_way_tools(name):
     assert hard_denied(name)
@@ -114,6 +114,11 @@ def test_helm_menu_actions_and_confirm_are_checked():
         assert not decide_call(spoke=s, tool=menu, client="grokbot", arguments={"action": action}).allowed
     assert not decide_call(spoke=s, tool=menu, client="grokbot", arguments={"action": "write_off"}).allowed
     assert not decide_call(spoke=s, tool=menu, client="grokbot", arguments={"action": ["help"]}).allowed
+    # sub-actions inside args get the same check
+    assert not decide_call(spoke=s, tool=menu, client="grokbot",
+                           arguments={"action": "margin_x", "args": {"action": "record_payment"}}).allowed
+    assert decide_call(spoke=s, tool=menu, client="grokbot",
+                       arguments={"action": "margin_x", "args": {"action": "amazon_link"}}) is ALLOW
     upd = tool("update_order")
     assert decide_call(spoke=s, tool=upd, client="grokbot", arguments={"order": "1"}) is ALLOW
     assert decide_call(spoke=s, tool=upd, client="grokbot", arguments={"confirm": False}) is ALLOW
@@ -127,6 +132,21 @@ def test_tool_words_splits_all_styles():
     assert tool_words("gmailSendDraft") == ["gmail", "send", "draft"]
     assert tool_words("notion-create.pages") == ["notion", "create", "pages"]
     assert tool_words("HTTPSendV2") == ["http", "send", "v", "2"]
+
+
+def test_shipped_helm_config_keeps_one_way_actions_out():
+    from pathlib import Path
+    helm = load_config(Path(__file__).resolve().parent.parent / "spokes.toml").spokes["helm"]
+    listed = {a for acts in helm.allow_actions.values() for a in acts}
+    for never in ("pay_po", "pay_invoice", "mark_paid", "record_payment", "refund_b2c_order", "cancel_order",
+                  "transmit_po", "manage_po", "procure_shortfall", "issue_sales_invoice", "credit_order_line",
+                  "grant_customer_credit", "set_credit_limit", "add_supplier_bank_account", "create_journal",
+                  "void_journal", "execute_batch", "plan_batch", "screen_action", "label_units_only",
+                  "kitting_run_start", "set_build", "ste_request_certificate", "draft_mail_reply", "grant_bu_role"):
+        assert never not in listed, never
+    menu = types.Tool(name="helm_buying", input_schema={"type": "object"})
+    d = decide_call(spoke=helm, tool=menu, client="claude", arguments={"action": "manage_po", "args": {}})
+    assert not d.allowed
 
 
 def test_shipped_config_is_valid_and_all_off():

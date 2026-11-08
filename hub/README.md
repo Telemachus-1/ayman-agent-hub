@@ -1,6 +1,6 @@
 # ayman-hub
 
-One MCP endpoint in front of every service Ayman's agents use. Claude, Paradev (Claude Code) and Grokbot each get **one URL and their own key**, instead of a separate connector per service. The real service keys live only in the hub.
+One MCP endpoint in front of every service Ayman's agents use. Claude and Grokbot each get **one URL and their own key** (Paradev's Claude Code uses Claude's), instead of a separate connector per service. The real service keys live only in the hub.
 
 Modelled on Basil's `basil-hub` (systems onboarding guide, 25 Oct 2026), with one difference: this hub is built to run on a public HTTPS address, because Ayman's agents run in the cloud.
 
@@ -74,7 +74,7 @@ Changing what's blocked in code (`HARD_DENY_TOKENS` in `policy.py`) needs a revi
 | 4 | Google: Drive, Docs, Sheets, Slides, Calendar | **Built and tested** against a fake Google. Needs the Google OAuth client and `google-login` on deploy day |
 | 5 | Gmail: ayman@ plus six logistics@ group mailboxes | **Built and tested** (read, search by mailbox, label, archive; no send or draft). Same Google sign-in |
 | 6 | Slack | Read config ready (sign-in through our own Slack app with MCP on: needs its client id and secret). Still to build: the reviewed two-step post to bot channels |
-| 7 | Helm | Needs a server login from Arthur |
+| 7 | Helm | Config ready: https://apothekon.io/mcp, sign-in approved by Ayman (no refresh token, so re-sign-in when it lapses). Allowed actions set from Helm's own menus; money, PO, invoice-issuing, ledger, warehouse-job and outside-email actions left out |
 | 8 | WhatsApp (optional) | Separate decision |
 | — | Hosting on a company server, public HTTPS, `allowed_hosts` | At the end |
 
@@ -89,4 +89,4 @@ Still open, by design or for later: TLS comes from the proxy in front; no rate l
 - Set `[hub].allowed_hosts` to the public host name. This turns on DNS-rebinding protection.
 - Put it behind HTTPS (for example Cloudflare, or a reverse proxy with a certificate).
 - Run it as its own user, with `AYMAN_HUB_HOME` and the env file readable by that user only.
-- Issue one key per client (`claude`, `paradev`, `grokbot`) and store them in each app's connector settings.
+- Issue one key per client (`claude`, `grokbot`; Paradev uses Claude's) and store them in each app's connector settings.

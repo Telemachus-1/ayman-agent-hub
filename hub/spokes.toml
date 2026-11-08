@@ -120,37 +120,72 @@ oauth_client_secret_env = "SLACK_OAUTH_CLIENT_SECRET"
 mode = "read-only"
 description = "Slack (step 6)"
 
-# 7. Helm: look-ups; writes only as previews. Helm's own preview -> confirm token stays the second lock.
-#    Endpoint and login: still to get from Arthur (a server login for the hub).
+# 7. Helm (Apothekon's MCP). Sign-in as Ayman: `ayman-hub login helm`, approved by him.
+#    Helm issues no refresh token, so when its access lapses `hub__status` says
+#    "needs sign-in" and Ayman signs in again.
+#    Actions below were read from Helm's own menus (help) on 8 Nov 2026. Left out on purpose,
+#    whatever is approved: anything that pays, refunds, credits, issues or voids invoices,
+#    posts to the ledger, creates, approves, sends or transmits a supplier PO, sends the
+#    warehouse a job, emails a customer or supplier, changes bank details, roles or settings,
+#    and the batch and screen-button tools that could reach any of those.
+#    Writes always preview first; Claude and Grokbot may confirm only after Ayman's exact yes.
 [spokes.helm]
 enabled = false
 transport = "http"
-url = ""
-auth_env = "HELM_TOKEN"
+url = "https://apothekon.io/mcp"
+auth = "oauth"
+oauth_scope = "helm"
+oauth_refresh = false
 mode = "read-write"
-deny_tools = ["payment_runs", "*pay*", "*refund*"]
-# Reads whose names don't say so, the area menus, and writes that only ever preview here.
+deny_tools = ["payment_runs", "*pay*", "*refund*", "manage_po", "manage_invoice_intake", "screen_action"]
 allow_tools = ["commercial_status", "customer_detail", "order_detail", "order_shipments", "order_timeline",
                "product_detail", "stock_levels", "exceptions", "sales_invoices", "purchase_orders",
-               "workspace", "helm_orders", "helm_invoices", "helm_customers", "helm_catalogue",
-               "helm_buying", "helm_bills", "helm_finance", "helm_admin",
-               "update_order", "edit_product", "report_problem"]
-allow_destructive = ["update_order", "edit_product", "report_problem"]
-# Agents preview Helm writes; nobody confirms through the hub until Ayman says which apps may.
+               "invoice_payables", "workspace", "helm_orders", "helm_invoices", "helm_customers",
+               "helm_catalogue", "helm_buying", "helm_bills", "helm_finance", "helm_admin",
+               "create_order", "update_order", "edit_product", "update_ap", "report_problem"]
+# Helm's tools carry Helm's own preview step; the action lists below are the hub's lock.
+allow_destructive = ["*"]
 confirm_args = ["confirm", "confirm_token"]
-confirm_clients = []
+confirm_clients = ["claude", "grokbot"]
 description = "Helm (step 7)"
 
-# Menus: only "help" until each area's actions are reviewed on deploy day.
 [spokes.helm.allow_actions]
-helm_orders = ["help"]
-helm_invoices = ["help"]
-helm_customers = ["help"]
-helm_catalogue = ["help"]
-helm_buying = ["help"]
-helm_bills = ["help"]
-helm_finance = ["help"]
-helm_admin = ["help"]
+helm_orders = ["help",
+  # reads
+  "backorders", "channel_breakdown", "commercial_preview", "demand_queue", "demand_summary", "find_orders",
+  "freight_estimate", "line_context", "order_collation", "order_comments", "order_commitment", "order_detail",
+  "order_emails", "order_intake_frictions", "order_intake_requirements", "order_line_supply", "order_match",
+  "order_pnl", "order_shipments", "order_timeline",
+  # writes (preview first)
+  "approve_order", "capture_order_from_chat", "create_order", "edit_order_lines", "link_order_to_purchase_order",
+  "manage_order_comment", "order_intake_forget", "preview_order_upload", "record_shipment_tracking", "update_order"]
+helm_invoices = ["help", "invoice_seller_options", "sales_invoices", "sales_invoice_email_draft"]
+helm_customers = ["help",
+  "customer_cohorts", "customer_credit", "customer_detail", "customer_history", "customer_standing",
+  "customer_ste_status", "customer_summary", "find_customer", "list_customers", "ste_check_delivery",
+  "ste_download_pack",
+  "create_customer", "edit_customer", "set_ste_states", "ste_correct_registration", "ste_upload_pack"]
+helm_catalogue = ["help",
+  "brand_desk_evidence", "commercial_status", "deal_sheet_detail", "deal_verdict", "ean_mappings",
+  "exclusivity_group_detail", "exclusivity_groups", "exclusivity_live", "fee_breakdown", "find_product",
+  "inventory_export", "inventory_value", "kit_breakdown", "kit_builds", "kit_library", "kitting_plan",
+  "kitting_run_detail", "kitting_run_list", "linked_stock", "list_buy_price_proposals",
+  "list_charge_definitions", "list_charge_rules", "list_products", "price_history", "price_lookup",
+  "product_detail", "set_detail", "set_list", "stock_levels", "tier_prices", "unit_cost", "unit_links",
+  "apply_charges", "create_deal_sheet", "create_product", "decide_buy_price_proposal", "edit_product",
+  "link_unit", "map_ean", "set_charge_rule", "set_edit", "set_price", "set_tier_price"]
+helm_buying = ["help",
+  "fba_fee_estimate", "fba_inbounds", "fba_shipment_financials", "fba_shipment_links", "fba_telematics",
+  "procurement_outlook", "purchase_orders", "supplier_options"]
+helm_bills = ["help", "invoice_payables",
+  "log_procurement_invoice", "resolve_invoice_line", "set_invoice_eta", "update_ap"]
+helm_finance = ["help",
+  "aged_debtors", "bank_lines", "cash_outlook", "cashflow", "chart_of_accounts", "company_books",
+  "counterparties", "find_journals", "journal_detail", "margin_explain", "o2c_metrics", "pnl",
+  "profit_by_product", "profit_summary", "profit_timeline", "revenue_summary", "warehouse_billing"]
+helm_admin = ["help",
+  "calendar_events_range", "errors_recent", "exceptions", "identity_review_queue", "parity_status",
+  "screen_read", "sql_read", "whats_changed", "whoami", "report_problem"]
 
 # 8. WhatsApp (optional, separate decision): read-only, send tools removed.
 [spokes.whatsapp]

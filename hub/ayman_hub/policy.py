@@ -41,7 +41,7 @@ HARD_DENY_TOKENS = frozenset({
     "delete", "deletes", "destroy", "purge", "trash", "unsubscribe",
     "pay", "pays", "paid", "payment", "payments", "payout", "payouts", "prepay", "autopay", "repay",
     "post", "posts", "publish", "invite", "invites", "share", "shares", "unshare",
-    "merge", "schedule", "submit", "cancel",
+    "merge", "schedule", "submit", "cancel", "transmit",
 })
 # Matched anywhere in the lowercased name, so "resend", "sendmail" or "HTTPSend" can't slip by.
 HARD_DENY_SUBSTRINGS = ("send", "delete", "trash", "unsubscribe", "forward", "refund", "purge")
@@ -173,16 +173,32 @@ def _truthy_keys(value: Any, keys: tuple[str, ...], depth: int = 0) -> bool:
     return False
 
 
+def _values_for(value: Any, key: str, depth: int = 0) -> list[Any]:
+    found: list[Any] = []
+    if depth > 6:
+        return [None]  # too deep to check: treated as a blocked action
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if isinstance(k, str) and k.lower() == key:
+                found.append(v)
+            found.extend(_values_for(v, key, depth + 1))
+    elif isinstance(value, list):
+        for v in value:
+            found.extend(_values_for(v, key, depth + 1))
+    return found
+
+
 def decide_call(*, spoke: Spoke, tool: types.Tool, client: str, arguments: dict | None) -> Decision:
     """Argument checks, after decide() has allowed the tool itself."""
     args = arguments or {}
     confirm_keys = tuple(k.lower() for k in spoke.confirm_args)
     if confirm_keys and client not in spoke.confirm_clients and _truthy_keys(args, confirm_keys):
         return Decision(False, "agents may preview this write, not confirm it; Ayman confirms")
+    for nested in _values_for(args, "action"):  # Helm puts sub-actions inside args too
+        if not isinstance(nested, str) or hard_denied(nested):
+            return Decision(False, "that action is a send, pay or delete-type action, blocked in code")
     action = args.get("action")
     if action is not None:
-        if not isinstance(action, str) or hard_denied(action):
-            return Decision(False, "that action is a send, pay or delete-type action, blocked in code")
         patterns = spoke.allow_actions.get(tool.name)
         if patterns is not None and not _matches(action, tuple(patterns)):
             return Decision(False, f"action '{action[:60]}' is not in allow_actions for {tool.name}")
