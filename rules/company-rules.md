@@ -55,3 +55,38 @@ Ayman rarely ships code, but whenever his agents do, the `code-change` and `pr-r
 
 - Never paste or print a password, key or token anywhere. Check a secret only by its length.
 - Never snapshot a web page that shows a password field.
+
+## From Basil's onboarding guide (25 Oct 2026)
+
+*Rules Basil marks as company policy, plus the lessons behind them. Adopted 8 Nov 2026. Where they repeat `AGENTS.md`, `AGENTS.md` is the short form.*
+
+### Money (when preparing a payment for a person)
+- Agents never pay. When preparing one, first check it isn't already paid on **every** rail (bank, Stripe payouts, Helm payables), by reference **and** amount.
+- Bank details come only from a saved payee, never from an email (least of all one from today).
+- Payments go through Helm or Revolut, never a browser dashboard.
+
+### Correcting live data
+- Live data (Supabase, Apothekon) is read-only to agents.
+- A correction needs evidence: a count plus a photo, a supplier document, or a BU lead's written words. It then goes through the supported preview → confirm route, followed by a read-back.
+
+### Reviews
+- Never call a PR "reviewed" until the review is actually posted on GitHub.
+- Review by a different company's agent (Codex reviewing Claude) is on hold (Ayman, 8 Nov). A separate Claude session reviews.
+
+### Browsers and passwords
+- Use your own tab, and close it after. Never change browser settings or export cookies.
+- **Money sites:** a person signs in on a visible screen; the agent only reads and clicks. Never type credentials into a money site, and never replay session headers.
+- **Scope browser briefs tightly:** the outcome, the exact system, the allowed actions and the hard limits. "Or the equivalent" once let an agent press the wrong button on a live store.
+- A fallback route (another agent, another browser) never relaxes a send, money or delete limit.
+- Passwords: copy the one login a job needs from your own vault into the agents' vault. Never bulk-copy.
+
+### Gmail
+- Never retry a "too many requests" (429) error. The mailbox cools down: wait, and say the sweep was cut short.
+- Keep sweeps light: at most one sweep per 30 minutes on a shared mailbox, and one per 3 hours on a person's own.
+
+### Hard-won lessons
+- Kill processes by exact process ID only. Never `pkill`, `killall` or a pattern.
+- Never press Enter on text you didn't type, and never treat suggested text as the person's answer.
+- On a usage-limit menu, never pick the option that buys credits. Move the work instead.
+- Never search the whole home folder (`find ~`). Search named folders, with `timeout 60`.
+- One owner per thread of work. If three agents report the same thing, the owner reports it once.

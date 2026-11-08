@@ -27,7 +27,8 @@ description: Research a supplier, brand, market, competitor, domain, price or cu
    - cite a source for each claim;
    - give a **"Could not check"** section listing what you couldn't verify.
 5. **Put it where it lives:** on the Linear card (as a Linear document or an attachment) or in the folder Ayman names. Link it.
-6. **Propose knowledge base entries** for durable company facts you learned, with the `kb-propose` skill.
+6. **If you have to ask someone,** say where you already looked: `Checked: <where> — not found`.
+7. **Propose knowledge base entries** for durable company facts you learned, with the `kb-propose` skill.
 
 ## Limits
 

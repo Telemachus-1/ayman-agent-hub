@@ -9,7 +9,7 @@ description: Prepare outreach to a supplier, customer or Amazon seller — resea
 
 ## Hard limits
 
-- **Never send.** Not email, not Slack, not a form, not a call booking. Ayman, or the owner, sends.
+- **Never send.** Not email, not Slack, not a form, not a call booking. Ayman, or the owner, sends. If Ayman ever asks an agent to send, he must see the exact text and recipients and say "send this" for that one message.
 - **Draft only when Ayman asks for a draft**, for that message. Drafting replies is not switched on by default (7 Nov 2026).
 - Never commit Ayman or the company to anything: prices, quantities, dates, terms.
 - Never contact a customer or supplier on your own initiative.
@@ -28,6 +28,10 @@ description: Prepare outreach to a supplier, customer or Amazon seller — resea
    - show every recipient as `Full Name <address>`, never a bare address;
    - use the supplier-facing name for the BU (for example **Valen Trading** with suppliers, **Tallon Trading** with convenience wholesale customers; see the knowledge base);
    - leave it as a draft and tell Ayman where it is.
+
+## Brand discretion (company policy)
+
+Each brand's outbound mail and documents carry **only that brand's** names and addresses. Before showing Ayman any draft, check it for the group, a parent, a sister company, another brand or another brand's suppliers, in the body, signature, attachments and file names. Remove any you find and say so.
 
 ## What never goes in outreach
 

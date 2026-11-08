@@ -32,7 +32,7 @@ Everything starts and ends in Linear. If it's not on the card, it didn't happen.
    - where it is (links);
    - what to check, and what is left;
    - who reviewed it, if anyone.
-2. **Objectively done** (merged code, a receipt, a number that matches): it can go straight to **Done**, saying so in the Result.
+2. **Objectively done** (a receipt, a number that matches, or code that is merged **and live**, with the version): it can go straight to **Done**, saying so in the Result. Merged but not live is not done.
 3. **Needs judgement** (taste, a commercial call, wording that goes outside): move it to **In Review** and **assign the requester**. Nobody reviews their own work. On a card Ayman filed himself, he is the reviewer.
 4. **Canceled** or **Duplicate** always carry a comment saying why.
 

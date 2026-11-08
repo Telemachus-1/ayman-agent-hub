@@ -14,6 +14,8 @@ description: Review and merge a pull request in a Telemachus repo — independen
 - **FIX FIRST blocks the merge.** If auto-merge is armed and the review says FIX FIRST, disarm it at once. Fix, push, and get a new review on the new head.
 - **Check an objection before acting on it.** Reviewers are sometimes wrong; a second look confirms it first.
 - **No answer is not approval.** A reviewer that errors or stops to ask is not a pass.
+- **Never call a PR "reviewed" until the review is actually posted on GitHub.** A review sitting in a queue or a file doesn't count.
+- Review by a different company's agent (Codex reviewing Claude) is on hold (Ayman, 8 Nov 2026).
 - Reviewers read the diff and may write a targeted probe. They don't re-run suites CI already ran.
 - On Apothekon, also read the **review-on-push** agent's SHIP / FIX FIRST comment and fix its FIX FIRST items.
 - The aim is **"help refine, then fix"**, never "break, then fix" after it's live.

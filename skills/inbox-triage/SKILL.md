@@ -44,8 +44,9 @@ Create these once if they are missing (check with `list_labels` first):
 
 **Never copy a password, login code or verification code** into the update or anywhere else. Say only "contains a login credential, see the thread".
 
-4. **Action items:** for every must-respond thread, write one line: who, what they need, by when if stated, and the Gmail link.
-5. **Read back:** re-list the inbox and confirm the counts match what you did.
+4. **Rate limits:** if Gmail returns a "too many requests" (429) error, stop. Never retry it. Report the sweep as cut short and carry on next time.
+5. **Action items:** for every must-respond thread, write one line: who, what they need, by when if stated, and the Gmail link.
+6. **Read back:** re-list the inbox and confirm the counts match what you did.
 
 ## Output for the daily update
 

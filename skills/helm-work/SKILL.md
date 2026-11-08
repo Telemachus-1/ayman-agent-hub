@@ -24,6 +24,10 @@ description: Look things up and make changes in Helm (the BU lead's interface to
 
 Money is always a decimal string, never a float.
 
+## Corrections
+
+A correction to a live record needs evidence first: a count plus a photo, a supplier document, or a BU lead's written words. Then preview → Ayman confirms → read back.
+
 ## Never
 
 - Move money, pay a bill, or send a purchase order.

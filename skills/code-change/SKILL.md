@@ -40,7 +40,8 @@ CI on the PR's exact head is **the** test run. While building, run only the test
 - Frontend: `cd app/frontend && npx tsc --noEmit && npx vitest run <file>`.
 - Format: `make format`. Everything CI's fast checks do, plus affected tests: `make preflight`.
 - Money, stock and security changes need tests that **prove the business rule**.
-- Stop your own dev servers and throwaway databases when finished. Never kill processes by pattern.
+- Stop your own dev servers and throwaway databases when finished. Kill only by exact process ID, never by pattern (`pkill`, `killall`).
+- Never search the whole home folder; search named folders with `timeout 60`.
 
 ## Local first
 
