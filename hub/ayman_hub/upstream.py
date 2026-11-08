@@ -69,7 +69,8 @@ class Upstream:
                     streamable_http_client(self.spoke.url, http_client=client)
                 )
             else:
-                env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG") if k in os.environ}
+                env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "PYTHONPATH") if k in os.environ}
+                env["AYMAN_HUB_HOME"] = str(self.home or hub_home())  # hub-owned spokes keep their sign-in here
                 for name in self.spoke.secret_env_names():
                     if name not in os.environ:
                         raise RuntimeError(f"environment variable {name} is not set")

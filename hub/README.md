@@ -23,8 +23,8 @@ Agents only *see* the tools they're allowed to call. Tools are named `<spoke>__<
 | Path | What |
 |---|---|
 | `spokes.toml` | The services, in the agreed order, with each one's rules. All switched off until their step |
-| `ayman_hub/` | The hub: `config`, `policy`, `state` (keys, audit log, kill switch), `oauth` (sign-in), `upstream`, `gateway`, `app`, `cli` |
-| `tests/` | 53 tests, including end-to-end runs through a real hub with a fake service and a fake sign-in service |
+| `ayman_hub/` | The hub: `config`, `policy`, `state` (keys, audit log, kill switch), `oauth` (sign-in), `upstream`, `gateway`, `app`, `cli`, and `spokes/` (the hub's own Google and Gmail spokes) |
+| `tests/` | 68 tests, including end-to-end runs through a real hub against a fake service, a fake sign-in service and a fake Google |
 
 Runtime state lives **outside the repo**, in `AYMAN_HUB_HOME` (default `~/.ayman-hub`), all owner-only:
 
@@ -33,6 +33,7 @@ Runtime state lives **outside the repo**, in `AYMAN_HUB_HOME` (default `~/.ayman
 | `clients.json` | The hash of each client key, never the key itself |
 | `audit.jsonl` | The audit log |
 | `OFF` | Present when the kill switch is on |
+| `oauth/google-account.json` | The one Google sign-in (refresh token only) shared by the Google and Gmail spokes |
 | `oauth/<spoke>.json` | A sign-in spoke's tokens and the service's token address. A pre-registered app's secret (Slack) is never written here |
 
 ## Commands
@@ -46,6 +47,7 @@ python3 -m ayman_hub on
 python3 -m ayman_hub status                 # switch, clients, last audit lines
 python3 -m ayman_hub login notion           # one-time sign-in for auth = "oauth" spokes
 python3 -m ayman_hub logout notion          # forget that sign-in
+python3 -m ayman_hub google-login           # one Google sign-in for the google and gmail spokes
 python3 -m ayman_hub serve --port 8742      # run it
 python3 -m pytest                           # tests
 ```
@@ -69,8 +71,8 @@ Changing what's blocked in code (`HARD_DENY_TOKENS` in `policy.py`) needs a revi
 | 1 | Linear | Config ready; API key as bearer (confirmed). Needs `LINEAR_API_KEY` on the server |
 | 2 | Notion | Config ready; sign-in only (confirmed). `login notion` on deploy day |
 | 3 | Granola | Config ready; sign-in only (confirmed). `login granola` on deploy day |
-| 4 | Google: Drive, Docs, Sheets, Slides, Calendar | Hub-owned spoke, to build |
-| 5 | Gmail: ayman@ plus six logistics@ group mailboxes | Hub-owned spoke, to build |
+| 4 | Google: Drive, Docs, Sheets, Slides, Calendar | **Built and tested** against a fake Google. Needs the Google OAuth client and `google-login` on deploy day |
+| 5 | Gmail: ayman@ plus six logistics@ group mailboxes | **Built and tested** (read, search by mailbox, label, archive; no send or draft). Same Google sign-in |
 | 6 | Slack | Read config ready (sign-in through our own Slack app with MCP on: needs its client id and secret). Still to build: the reviewed two-step post to bot channels |
 | 7 | Helm | Needs a server login from Arthur |
 | 8 | WhatsApp (optional) | Separate decision |

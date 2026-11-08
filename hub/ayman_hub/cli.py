@@ -9,6 +9,7 @@
     ayman-hub client list
     ayman-hub login  <spoke> [--listen]        one-time sign-in for auth = "oauth" spokes
     ayman-hub logout <spoke>                   forget that sign-in
+    ayman-hub google-login [--listen]          one Google sign-in for the google and gmail spokes
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from pathlib import Path
 
 from ayman_hub.config import ConfigError, hub_home, load_config
 from ayman_hub.oauth import FileTokenStorage
+from ayman_hub.spokes.google_api import EXPECTED_ACCOUNT, google_signed_in
 from ayman_hub.state import AuditLog, ClientStore, KillSwitch
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "spokes.toml"
@@ -43,6 +45,11 @@ def _doctor(config_path: Path) -> int:
             signed = FileTokenStorage(home, spoke).signed_in()
             print(f"         sign-in: {'yes' if signed else 'NO (ayman-hub login ' + spoke.name + ')'}")
             if spoke.enabled and not signed:
+                problems += 1
+        if spoke.name in ("google", "gmail"):
+            account = google_signed_in(home)
+            print(f"         google sign-in: {account or 'NO (ayman-hub google-login)'}")
+            if spoke.enabled and not account:
                 problems += 1
         if not spoke.enabled:
             continue
@@ -101,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
     lo = sub.add_parser("logout")
     lo.add_argument("spoke")
     lo.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    g = sub.add_parser("google-login")
+    g.add_argument("--listen", action="store_true")
+    g.add_argument("--account", default=EXPECTED_ACCOUNT)
     args = p.parse_args(argv)
     home = hub_home()
 
@@ -137,6 +147,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"sign-in failed: {describe_error(e)}")
             return 1
         print(f"signed in to '{spoke.name}': {n} tools available. The sign-in is stored owner-only in {home}/oauth/.")
+        return 0
+    if args.cmd == "google-login":
+        import anyio
+
+        from ayman_hub.spokes.google_api import google_login
+        from ayman_hub.upstream import describe_error
+
+        try:
+            email = anyio.run(lambda: google_login(home, account=args.account, listen=args.listen))
+        except Exception as e:
+            print(f"Google sign-in failed: {describe_error(e)}")
+            return 1
+        print(f"signed in to Google as {email}. Stored owner-only in {home}/oauth/.")
         return 0
     if args.cmd == "doctor":
         return _doctor(args.config)

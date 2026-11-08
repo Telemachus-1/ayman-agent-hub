@@ -56,23 +56,32 @@ description = "Granola (step 3)"
 
 # 4. Google: Drive, Docs, Sheets, Slides and Calendar. Read; create and edit files;
 #    no sharing, permission changes or trash; calendar read-only for now.
-#    Built in step 4 as a hub-owned spoke, sharing one Google sign-in with Gmail.
+#    The hub's own spoke (ayman_hub/spokes/google.py): no share, access, move, trash or
+#    calendar-change tools exist in it at all. One Google sign-in for this and Gmail:
+#    `ayman-hub google-login` (refuses any account but ayman@telemachus.io). Calendar is
+#    signed in read-only. The Google OAuth client id and secret come from the env file.
 [spokes.google]
 enabled = false
 transport = "stdio"
-command = ""
-env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"]
+command = "python3"
+args = ["-m", "ayman_hub.spokes.google"]
+env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"]
 mode = "read-write"
 deny_tools = ["*share*", "*permission*", "*trash*", "calendar_*create*", "calendar_*update*", "calendar_*respond*"]
+# Editing existing text or cells: approved ("read, create and edit"). Remove a line to turn it off.
+allow_destructive = ["docs_replace_text", "sheets_update_range", "slides_replace_text"]
 description = "Drive, Docs, Sheets, Slides, Calendar (step 4)"
 
 # 5. Gmail: ayman@telemachus.io plus the six logistics@ group mailboxes that arrive in it.
-#    Read, search by mailbox, label, archive, draft. No send tool exists. Never retries a 429.
+#    The hub's own spoke (ayman_hub/spokes/gmail.py): read, search by mailbox, label, archive,
+#    create labels. No send, reply, forward, draft, trash, delete or unsubscribe tool exists.
+#    Drafts stay off until Ayman allows them (connectors.md). Never retries a 429.
 [spokes.gmail]
 enabled = false
 transport = "stdio"
-command = ""
-env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"]
+command = "python3"
+args = ["-m", "ayman_hub.spokes.gmail"]
+env_passthrough = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"]
 mode = "read-write"
 deny_tools = ["*spam*", "*filter*", "*forward*", "*vacation*"]
 description = "Gmail, 7 mailboxes (step 5)"
