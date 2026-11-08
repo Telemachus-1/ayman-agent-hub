@@ -110,7 +110,10 @@ class KillSwitch:
 
 
 class AuditLog:
-    """Append-only JSON lines. Records who did what; never arguments or results."""
+    """Append-only JSON lines. Records who did what; never arguments or results.
+    Names are cut to 128 characters, and the file rolls over to audit.jsonl.1 at 20 MB."""
+
+    MAX_BYTES = 20 * 1024 * 1024
 
     def __init__(self, home: Path):
         self.path = _private_dir(home) / "audit.jsonl"
@@ -119,9 +122,9 @@ class AuditLog:
               started: float | None = None, error: str | None = None) -> None:
         line = {
             "ts": _now(),
-            "client": client,
-            "spoke": spoke,
-            "tool": tool,
+            "client": client[:128],
+            "spoke": spoke[:128],
+            "tool": tool[:128],
             "decision": "allowed" if allowed else "blocked",
             "reason": reason,
         }
@@ -129,6 +132,11 @@ class AuditLog:
             line["ms"] = round((time.monotonic() - started) * 1000)
         if error:
             line["error"] = error[:200]
+        try:
+            if self.path.stat().st_size > self.MAX_BYTES:
+                self.path.replace(self.path.with_suffix(".jsonl.1"))
+        except FileNotFoundError:
+            pass
         fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         with os.fdopen(fd, "a") as f:
             f.write(json.dumps(line) + "\n")

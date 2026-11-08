@@ -41,6 +41,7 @@ transport = "stdio"
 command = "{sys.executable}"
 args = ["{FAKE}"]
 mode = "read-write"
+allow_tools = ["create_item", "archive_item"]
 
 [spokes.fakero]
 enabled = true
@@ -151,7 +152,12 @@ def test_status_reports_a_broken_spoke_without_secrets(hub):
     assert st["client"] == "claude"
     assert st["spokes"]["fake"]["connected"] is True
     assert st["spokes"]["broken"]["connected"] is False
-    assert "AYMAN_HUB_TEST_MISSING_TOKEN" in st["spokes"]["broken"]["error"]
+    # Agents get a fixed category, never raw error text or setting names.
+    assert st["spokes"]["broken"]["problem"].startswith("missing settings")
+    assert "AYMAN_HUB_TEST_MISSING_TOKEN" not in json.dumps(st)
+    # ...and can see what is held back and why.
+    hidden = st["spokes"]["fake"]["hidden_tools"]
+    assert any("send_message" in names for names in hidden.values())
 
 
 def test_audit_log_records_who_and_what_but_never_content(hub):

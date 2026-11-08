@@ -6,17 +6,17 @@ Modelled on Basil's `basil-hub` (systems onboarding guide, 25 Oct 2026), with on
 
 ## What it does on every call
 
-1. **Key check.** No valid, unrevoked hub key means a 401, before anything else runs.
-2. **Policy** (`ayman_hub/policy.py`):
-   - Is the kill switch off?
-   - Is the spoke switched on, and is this client allowed on it?
-   - Is it a send, pay or delete-type tool? Those are **blocked in code** and can't be unblocked in config.
-   - Does it pass the spoke's `deny_tools`, `allow_tools` and `mode` (read-only or read-write)?
-   - Is it marked destructive by the service?
+1. **Key check.** Every path except `/healthz` needs a valid, unrevoked hub key, or it gets a 401 before anything else runs.
+2. **Policy** (`ayman_hub/policy.py`). **Writes are blocked unless listed.**
+   - Is the kill switch off? Is the spoke switched on, and is this client allowed on it?
+   - Is the name plain ASCII? Is it a send, pay, delete, share, invite, post, merge, schedule, submit or cancel-type tool? Those are **blocked in code**, however the name is spelt (`HTTPSend`, `resend`, look-alike letters), and can't be unblocked in config.
+   - Is it a read? Only if its name starts with a read verb and has no write verb. A service marking a tool "read-only" isn't enough on its own.
+   - Anything else is a write: it must be in the spoke's `allow_tools`, and in `allow_destructive` unless the service marks it safe.
+   - **Arguments:** a menu tool's `action` gets the same blocked-in-code check and must be in `allow_actions`; a `confirm`-type argument is refused unless the client is in `confirm_clients`, which is empty, so agents preview and Ayman confirms.
 3. **Forward** to the service, if allowed.
-4. **Audit:** one JSON line per call, recording who, which spoke, which tool, allowed or blocked, and how long it took. **Never arguments or results.**
+4. **Audit:** one JSON line per call, recording who, which spoke, which tool, allowed or blocked, and how long it took. **Never arguments or results.** It rolls over at 20 MB.
 
-Agents only *see* the tools they're allowed to call. Tools are named `<spoke>__<tool>`, for example `linear__list_issues`, and `hub__status` shows what's connected.
+Agents only *see* the tools they're allowed to call. Tools are named `<spoke>__<tool>`, for example `linear__list_issues`. `hub__status` shows what's connected and, under `hidden_tools`, what is held back and why: use it to tune each spoke on its first day. Agents never see raw connection errors; those go to the server log.
 
 ## Files
 
@@ -24,7 +24,7 @@ Agents only *see* the tools they're allowed to call. Tools are named `<spoke>__<
 |---|---|
 | `spokes.toml` | The services, in the agreed order, with each one's rules. All switched off until their step |
 | `ayman_hub/` | The hub: `config`, `policy`, `state` (keys, audit log, kill switch), `oauth` (sign-in), `upstream`, `gateway`, `app`, `cli`, and `spokes/` (the hub's own Google and Gmail spokes) |
-| `tests/` | 68 tests, including end-to-end runs through a real hub against a fake service, a fake sign-in service and a fake Google |
+| `tests/` | 100 tests, including end-to-end runs through a real hub against a fake service, a fake sign-in service and a fake Google |
 
 Runtime state lives **outside the repo**, in `AYMAN_HUB_HOME` (default `~/.ayman-hub`), all owner-only:
 
@@ -77,6 +77,12 @@ Changing what's blocked in code (`HARD_DENY_TOKENS` in `policy.py`) needs a revi
 | 7 | Helm | Needs a server login from Arthur |
 | 8 | WhatsApp (optional) | Separate decision |
 | — | Hosting on a company server, public HTTPS, `allowed_hosts` | At the end |
+
+## Security review (8 Nov 2026)
+
+An independent review found that the first policy trusted service markings and allowed every write that wasn't denied, and that Helm's menu tools could reach payments through their `action` argument. Fixed: writes blocked unless listed, argument checks, stricter name matching, fixed-wording status, outside-sharing checks and raw values in the Google spoke, a stricter Google sign-in, id checks, the hub's own Python and an owner-only working folder for its spokes, https-only spokes, and audit limits.
+
+Still open, by design or for later: TLS comes from the proxy in front; no rate limiting yet; a spoke that drops mid-run isn't reconnected until restart; run the CLI with the same `AYMAN_HUB_HOME` as the service, or `off` won't reach it (`doctor` prints the home it uses).
 
 ## Before it goes public
 

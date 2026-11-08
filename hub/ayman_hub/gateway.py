@@ -15,7 +15,7 @@ from mcp.server.lowlevel import Server
 
 from ayman_hub import __version__
 from ayman_hub.config import HubConfig
-from ayman_hub.policy import ALLOW, decide
+from ayman_hub.policy import ALLOW, decide, decide_call
 from ayman_hub.state import AuditLog, KillSwitch
 from ayman_hub.oauth import NeedsLogin
 from ayman_hub.upstream import Upstream, root_error
@@ -74,18 +74,26 @@ class Gateway:
             "switched_off": self.kill.is_off(),
             "client": client,
             "spokes": {
-                name: {
-                    "connected": up.session is not None,
-                    "error": up.error,
-                    "mode": up.spoke.mode,
-                    "tools_for_you": sum(
-                        1 for t in up.tools.values()
-                        if decide(spoke=up.spoke, tool=t, client=client, hub_off=False) is ALLOW
-                    ),
-                }
+                name: self._spoke_status(up, client)
                 for name, up in self.upstreams.items()
             },
         }
+
+    def _spoke_status(self, up: Upstream, client: str) -> dict:
+        """What an agent may know about a spoke: never raw error text (that stays in the server log)."""
+        offered, hidden = 0, {}
+        for t in up.tools.values():
+            d = decide(spoke=up.spoke, tool=t, client=client, hub_off=False)
+            if d is ALLOW:
+                offered += 1
+            else:
+                hidden.setdefault(d.reason, []).append(t.name[:64])
+        out = {"connected": up.session is not None, "mode": up.spoke.mode, "tools_for_you": offered}
+        if up.problem:
+            out["problem"] = up.problem
+        if hidden:
+            out["hidden_tools"] = {reason: names[:40] for reason, names in hidden.items()}
+        return out
 
     # Tool calls ---------------------------------------------------------
     async def call(self, client: str, name: str, arguments: dict | None) -> types.CallToolResult:
@@ -107,6 +115,11 @@ class Gateway:
             self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=False,
                              reason=decision.reason, started=started)
             return _text(f"Blocked by the hub: {decision.reason}.", error=True)
+        decision = decide_call(spoke=up.spoke, tool=tool, client=client, arguments=arguments)
+        if not decision.allowed:
+            self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=False,
+                             reason=decision.reason, started=started)
+            return _text(f"Blocked by the hub: {decision.reason}.", error=True)
 
         try:
             result = await up.call(tool_name, arguments)
@@ -114,7 +127,7 @@ class Gateway:
             self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=True,
                              reason="allowed", started=started, error=type(root_error(e)).__name__)
             root = root_error(e)
-            hint = f" {root}" if isinstance(root, NeedsLogin) else ""
+            hint = f" It needs signing in again: run `ayman-hub login {spoke_name}`." if isinstance(root, NeedsLogin) else ""
             return _text(f"The {spoke_name} service failed: {type(root).__name__}.{hint} Nothing was retried.",
                          error=True)
         self.audit.write(client=client, spoke=spoke_name, tool=tool_name, allowed=True,

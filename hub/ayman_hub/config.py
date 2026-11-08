@@ -53,6 +53,11 @@ class Spoke:
     oauth_client_secret_env: str | None = None
     oauth_token_auth: str = "client_secret_post"
     oauth_redirect_uri: str = DEFAULT_REDIRECT
+    # Argument checks (policy.decide_call): menu tools' allowed `action` values, and
+    # confirm-type arguments only some clients may set.
+    allow_actions: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    confirm_args: tuple[str, ...] = ()
+    confirm_clients: tuple[str, ...] = ()
 
     def secret_env_names(self) -> list[str]:
         names = list(self.header_env.values()) + list(self.env_passthrough)
@@ -96,6 +101,7 @@ def _spoke(name: str, raw: dict) -> Spoke:
         "env_passthrough", "mode", "allow_tools", "deny_tools", "allow_destructive",
         "clients", "description", "auth", "oauth_scope", "oauth_client_id_env",
         "oauth_client_secret_env", "oauth_token_auth", "oauth_redirect_uri",
+        "allow_actions", "confirm_args", "confirm_clients",
     }
     unknown = set(raw) - known
     if unknown:
@@ -111,8 +117,10 @@ def _spoke(name: str, raw: dict) -> Spoke:
     command = raw.get("command")
     enabled = bool(raw.get("enabled", False))
     # A switched-off spoke may be a placeholder; a switched-on one must be reachable.
-    if enabled and transport == "http" and not (isinstance(url, str) and url.startswith(("https://", "http://"))):
-        raise ConfigError(f"{where}: http spokes need a url starting with https://")
+    if enabled and transport == "http":
+        u = urlparse(url) if isinstance(url, str) else None
+        if not u or not (u.scheme == "https" or (u.scheme == "http" and u.hostname in {"127.0.0.1", "localhost"})):
+            raise ConfigError(f"{where}: http spokes need a url starting with https:// (plain http only on this machine)")
     if enabled and transport == "stdio" and not isinstance(command, str):
         raise ConfigError(f"{where}: stdio spokes need a command")
     auth = raw.get("auth", "bearer" if raw.get("auth_env") else "none")
@@ -138,6 +146,12 @@ def _spoke(name: str, raw: dict) -> Spoke:
         parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"})
     ):
         raise ConfigError(f"{where}: oauth_redirect_uri must be https:// or a loopback http:// address")
+    allow_actions = raw.get("allow_actions", {})
+    if not isinstance(allow_actions, dict) or not all(
+        isinstance(k, str) and isinstance(v, list) and all(isinstance(x, str) for x in v)
+        for k, v in allow_actions.items()
+    ):
+        raise ConfigError(f"{where}: allow_actions must map tool names to lists of action patterns")
     header_env = raw.get("header_env", {})
     if not isinstance(header_env, dict) or not all(
         isinstance(k, str) and isinstance(v, str) for k, v in header_env.items()
@@ -166,6 +180,9 @@ def _spoke(name: str, raw: dict) -> Spoke:
         oauth_client_secret_env=raw.get("oauth_client_secret_env"),
         oauth_token_auth=token_auth,
         oauth_redirect_uri=redirect,
+        allow_actions={k: tuple(v) for k, v in allow_actions.items()},
+        confirm_args=_tuple(raw.get("confirm_args"), f"{where}.confirm_args"),
+        confirm_clients=_tuple(raw.get("confirm_clients"), f"{where}.confirm_clients"),
     )
 
 

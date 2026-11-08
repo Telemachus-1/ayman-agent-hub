@@ -40,10 +40,16 @@ FILES = {
     "deck1": {"id": "deck1", "name": "Q4 review", "mimeType": "application/vnd.google-apps.presentation",
               "parents": ["root"]},
     "txt1": {"id": "txt1", "name": "notes.txt", "mimeType": "text/plain", "size": "11", "parents": ["root"]},
+    "shared1": {"id": "shared1", "name": "Supplier sheet", "mimeType": "application/vnd.google-apps.spreadsheet",
+                "parents": ["root"]},
     "img1": {"id": "img1", "name": "logo.png", "mimeType": "image/png", "size": "999", "parents": ["root"]},
 }
 DOCS = {"doc1": {"documentId": "doc1", "title": "Brand rules", "text": "Use Valen only.\nNever mention the group.\n"}}
-SHEETS = {"sheet1": {"title": "Price list", "tabs": {"Prices": [["EAN", "Price"], ["5012345678900", "9.99"]]}}}
+SHEETS = {"sheet1": {"title": "Price list", "tabs": {"Prices": [["EAN", "Price"], ["5012345678900", "9.99"]]}},
+          "shared1": {"title": "Supplier sheet", "tabs": {"Orders": [["PO", "Qty"]]}}}
+PERMISSIONS = {"shared1": [{"type": "user", "emailAddress": "ayman@telemachus.io", "role": "owner"},
+                           {"type": "user", "emailAddress": "orders@supplier.example", "role": "writer"}],
+               "linkfolder": [{"type": "anyone", "role": "reader"}]}
 DECKS = {"deck1": {"presentationId": "deck1", "title": "Q4 review", "slides": ["Hello {{name}}", "Numbers"]}}
 EVENTS = {"ev1": {"id": "ev1", "summary": "Supplier call", "start": {"dateTime": "2026-11-09T10:00:00Z"},
                   "end": {"dateTime": "2026-11-09T10:30:00Z"},
@@ -81,7 +87,7 @@ async def auth(request: Request):
     hint = q.get("login_hint", "")
     codes[code] = {"challenge": q["code_challenge"], "scope": q["scope"],
                    "email": "someone.else@gmail.com" if hint.startswith("wrong") else hint,
-                   "redirect": q["redirect_uri"], "drop": "drop_scope" in hint}
+                   "redirect": q["redirect_uri"], "drop": "drop_scope" in hint, "extra": "extra_scope" in hint}
     return RedirectResponse(f"{q['redirect_uri']}?{urlencode({'code': code, 'state': q['state']})}", status_code=302)
 
 
@@ -98,6 +104,8 @@ async def token(request: Request):
             return JSONResponse({"error": "invalid_grant"}, status_code=400)
         at, rt = "ya29." + secrets.token_urlsafe(8), "1//" + secrets.token_urlsafe(8)
         scope = " ".join(s for s in c["scope"].split() if not (c["drop"] and s.endswith("gmail.modify")))
+        if c["extra"]:
+            scope += " https://www.googleapis.com/auth/calendar"
         access[at], refresh[rt] = c["email"], {"email": c["email"], "scope": scope}
         return JSONResponse({"access_token": at, "refresh_token": rt, "expires_in": 3599, "scope": scope,
                              "token_type": "Bearer"})
@@ -140,7 +148,7 @@ async def api(request: Request):
     body = await request.json() if request.method in ("POST", "PUT", "PATCH") and await request.body() else {}
 
     if path == "/oauth2/v3/userinfo":
-        return JSONResponse({"email": who})
+        return JSONResponse({"email": who, "email_verified": True, "hd": who.rpartition("@")[2]})
 
     # Drive
     if path == "/drive/v3/files":
@@ -148,9 +156,13 @@ async def api(request: Request):
     if path.startswith("/drive/v3/files/"):
         rest = path.removeprefix("/drive/v3/files/")
         fid, _, sub = rest.partition("/")
-        f = FILES.get(fid)
+        f = FILES.get(fid) or ({"id": fid, "name": fid, "mimeType": "application/vnd.google-apps.folder"}
+                                if fid in ("folderX", "linkfolder") else None)
         if not f:
             return gerr(404, f"File not found: {fid}.")
+        if sub == "permissions":
+            return JSONResponse({"permissions": PERMISSIONS.get(fid, [
+                {"type": "user", "emailAddress": "ayman@telemachus.io", "role": "owner"}])})
         if request.method == "PATCH":
             f["parents"] = [q["addParents"]]
             return JSONResponse({"id": fid})
@@ -222,11 +234,11 @@ async def api(request: Request):
             return gerr(400, f"Unable to parse range: {rng}")
         rows = s["tabs"][tab]
         if request.url.path.endswith(":append"):
-            assert q["valueInputOption"] == "USER_ENTERED"
+            assert q["valueInputOption"] == "RAW"
             rows.extend(body["values"])
             return JSONResponse({"updates": {"updatedRows": len(body["values"]), "updatedRange": f"{tab}!A{len(rows)}"}})
         if request.method == "PUT":
-            assert q["valueInputOption"] == "USER_ENTERED"
+            assert q["valueInputOption"] == "RAW"
             for i, row in enumerate(body["values"]):
                 while len(rows) <= i:
                     rows.append([])

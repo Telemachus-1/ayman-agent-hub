@@ -21,6 +21,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
 import time
 from pathlib import Path
@@ -49,8 +50,9 @@ ACCOUNT_FILE = "google-account.json"
 
 
 def _hosts() -> dict[str, str]:
-    """Google's API addresses. GOOGLE_API_BASE points them all at a stand-in for tests."""
-    base = os.environ.get("GOOGLE_API_BASE")
+    """Google's API addresses. In tests only (AYMAN_HUB_TESTING=1), GOOGLE_API_BASE points them
+    all at a stand-in; otherwise it is ignored, so a stray setting can't redirect the sign-in."""
+    base = os.environ.get("GOOGLE_API_BASE") if os.environ.get("AYMAN_HUB_TESTING") == "1" else None
     if base:
         base = base.rstrip("/")
         return {
@@ -77,9 +79,29 @@ def _hosts() -> dict[str, str]:
     }
 
 
+_IDENT = re.compile(r"^[A-Za-z0-9_-]{1,256}$")
+_CALENDAR = re.compile(r"^(primary|[A-Za-z0-9._%+-]{1,128}@[A-Za-z0-9.-]{1,128})$")
+
+
 def seg(value: str) -> str:
-    """Encode one URL path segment (ids, ranges, calendar ids)."""
-    return quote(str(value), safe="")
+    """Encode one URL path segment (ranges, label names). "." and ".." are refused."""
+    value = str(value)
+    if value in (".", "..") or not value:
+        raise GoogleError("that value isn't valid here")
+    return quote(value, safe="")
+
+
+def ident(value: str) -> str:
+    """A Google id (file, doc, sheet, deck, thread, event): letters, digits, - and _ only."""
+    if not _IDENT.match(str(value)):
+        raise GoogleError(f"'{str(value)[:40]}' is not a valid Google id")
+    return str(value)
+
+
+def calendar_ident(value: str) -> str:
+    if not _CALENDAR.match(str(value)):
+        raise GoogleError("calendar_id must be 'primary' or a calendar address")
+    return quote(str(value), safe="@")
 
 
 class GoogleError(ToolError):
@@ -205,7 +227,7 @@ async def google_login(
         "client_id": cid, "redirect_uri": REDIRECT, "response_type": "code",
         "scope": " ".join(SCOPES), "access_type": "offline", "prompt": "consent",
         "code_challenge": challenge, "code_challenge_method": "S256", "state": state,
-        "login_hint": account, "include_granted_scopes": "true",
+        "login_hint": account, "hd": account.split("@")[-1],
     })
     if open_url is not None:
         landed = parse_redirect(await open_url(url))
@@ -230,13 +252,23 @@ async def google_login(
         if not tokens.get("refresh_token"):
             raise GoogleError("Google gave no refresh token; remove the hub's access in your Google account and retry")
         granted = set(tokens.get("scope", "").split())
-        missing = [s for s in SCOPES if s not in granted and s not in ("openid", "email")]
+        aliases = {"openid", "email", "https://www.googleapis.com/auth/userinfo.email"}
+        missing = [s for s in SCOPES if s not in granted and s not in aliases]
+        extra = sorted(granted - set(SCOPES) - aliases)
         who = await http.get(hosts["userinfo"], headers={"Authorization": f"Bearer {tokens['access_token']}"})
-        email = who.json().get("email", "") if who.status_code == 200 else ""
-    if email.lower() != account.lower():
-        raise GoogleError(f"signed in as {email or 'an unknown account'}, not {account}; nothing was stored")
+        info = who.json() if who.status_code == 200 else {}
+    email = str(info.get("email", ""))
+    domain = account.split("@")[-1].lower()
+    if email.lower() != account.lower() or info.get("email_verified") is not True \
+            or str(info.get("hd", "")).lower() != domain:
+        raise GoogleError(f"signed in as {email or 'an unknown account'}, not {account} "
+                          f"(a verified {domain} account); nothing was stored")
     if missing:
         raise GoogleError(f"these permissions were not granted, so nothing was stored: {', '.join(missing)}")
+    if extra:
+        raise GoogleError("this sign-in carries wider permissions than the hub asks for "
+                          f"({', '.join(extra)}); remove the hub's access in your Google account "
+                          "and sign in again. Nothing was stored.")
     _write_private(home / "oauth" / ACCOUNT_FILE, json.dumps({
         "account": email, "refresh_token": tokens["refresh_token"], "scopes": sorted(granted),
         "updated": int(time.time()),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from contextlib import AsyncExitStack
 from pathlib import Path
 
@@ -30,6 +31,22 @@ def describe_error(e: BaseException) -> str:
     return f"{type(e).__name__}: {e}"[:300]
 
 
+def problem_category(e: BaseException, spoke: str) -> str:
+    """A fixed message for agents. Raw errors can carry token-endpoint replies or setting names."""
+    from ayman_hub.oauth import NeedsLogin
+
+    root = root_error(e)
+    if isinstance(root, NeedsLogin):
+        return f"needs sign-in: run `ayman-hub login {spoke}`"
+    if isinstance(root, MissingSetting):
+        return "missing settings on the hub server (see `ayman-hub doctor`)"
+    return "could not connect (details in the hub's server log)"
+
+
+class MissingSetting(RuntimeError):
+    """An environment variable the spoke needs is not set."""
+
+
 class Upstream:
     """One live session to one spoke. If it fails to start, the spoke is marked down and offers no tools."""
 
@@ -38,19 +55,20 @@ class Upstream:
         self.home = home
         self.session: ClientSession | None = None
         self.tools: dict[str, types.Tool] = {}
-        self.error: str | None = None
+        self.error: str | None = None    # detail, for the server log only
+        self.problem: str | None = None  # fixed wording that agents may see
 
     def _headers(self) -> dict[str, str]:
         headers: dict[str, str] = {}
         if self.spoke.auth == "bearer" and self.spoke.auth_env:
             token = os.environ.get(self.spoke.auth_env)
             if not token:
-                raise RuntimeError(f"environment variable {self.spoke.auth_env} is not set")
+                raise MissingSetting(f"environment variable {self.spoke.auth_env} is not set")
             headers["Authorization"] = f"Bearer {token}"
         for header, env_name in self.spoke.header_env.items():
             value = os.environ.get(env_name)
             if not value:
-                raise RuntimeError(f"environment variable {env_name} is not set")
+                raise MissingSetting(f"environment variable {env_name} is not set")
             headers[header] = value
         return headers
 
@@ -69,14 +87,18 @@ class Upstream:
                     streamable_http_client(self.spoke.url, http_client=client)
                 )
             else:
-                env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "PYTHONPATH") if k in os.environ}
-                env["AYMAN_HUB_HOME"] = str(self.home or hub_home())  # hub-owned spokes keep their sign-in here
+                home = self.home or hub_home()
+                env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG") if k in os.environ}
+                env["AYMAN_HUB_HOME"] = str(home)  # hub-owned spokes keep their sign-in here
                 for name in self.spoke.secret_env_names():
                     if name not in os.environ:
-                        raise RuntimeError(f"environment variable {name} is not set")
+                        raise MissingSetting(f"environment variable {name} is not set")
                     env[name] = os.environ[name]
+                # "@python" means this hub's own interpreter, so PATH can't swap it. The working
+                # folder is the owner-only hub home, so nothing planted beside the hub is imported.
+                command = sys.executable if self.spoke.command == "@python" else self.spoke.command
                 params = StdioServerParameters(
-                    command=self.spoke.command, args=list(self.spoke.args), env=env
+                    command=command, args=list(self.spoke.args), env=env, cwd=str(home)
                 )
                 read, write = await stack.enter_async_context(stdio_client(params))
             session = await stack.enter_async_context(ClientSession(read, write))
@@ -89,20 +111,23 @@ class Upstream:
             self.tools = {}
             # Never echo values: the message names variables, not their contents.
             self.error = describe_error(e)
+            self.problem = problem_category(e, self.spoke.name)
             log.warning("spoke %s down: %s", self.spoke.name, self.error)
 
     async def refresh_tools(self) -> None:
         assert self.session is not None
         tools: dict[str, types.Tool] = {}
         cursor = None
-        while True:
+        seen: set[str] = set()
+        for _ in range(50):  # a service that keeps paging must not hang the hub
             params = types.PaginatedRequestParams(cursor=cursor) if cursor else None
             result = await self.session.list_tools(params=params)
             for tool in result.tools:
                 tools[tool.name] = tool
             cursor = result.next_cursor
-            if not cursor:
+            if not cursor or cursor in seen:
                 break
+            seen.add(cursor)
         self.tools = tools
 
     async def call(self, tool: str, arguments: dict | None) -> types.CallToolResult:

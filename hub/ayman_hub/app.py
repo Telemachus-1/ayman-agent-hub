@@ -35,9 +35,12 @@ class KeyAuth:
         self.prefix = protected_prefix
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not scope["path"].startswith(self.prefix):
+        # Everything needs a key except the lifespan events and the health check.
+        if scope["type"] == "lifespan" or (scope["type"] == "http" and scope["path"] == "/healthz"):
             return await self.app(scope, receive, send)
-        headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
+        if scope["type"] != "http":
+            return  # no websockets or anything else
+        headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
         key = headers.get("x-hub-key")
         auth = headers.get("authorization", "")
         if not key and auth.lower().startswith("bearer "):

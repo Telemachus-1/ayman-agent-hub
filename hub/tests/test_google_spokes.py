@@ -49,8 +49,8 @@ def google(tmp_path_factory):
         proc.kill()
         pytest.fail("fake Google did not start")
     saved = {k: os.environ.get(k) for k in ("GOOGLE_API_BASE", "GOOGLE_OAUTH_CLIENT_ID",
-                                            "GOOGLE_OAUTH_CLIENT_SECRET", "PYTHONPATH")}
-    os.environ.update(GOOGLE_API_BASE=base, GOOGLE_OAUTH_CLIENT_ID="hub-client",
+                                            "GOOGLE_OAUTH_CLIENT_SECRET", "PYTHONPATH", "AYMAN_HUB_TESTING")}
+    os.environ.update(GOOGLE_API_BASE=base, GOOGLE_OAUTH_CLIENT_ID="hub-client", AYMAN_HUB_TESTING="1",
                       GOOGLE_OAUTH_CLIENT_SECRET="hub-secret", PYTHONPATH=str(HUB_DIR))
     yield {"base": base, "log": state / "log.jsonl"}
     for k, v in saved.items():
@@ -87,6 +87,7 @@ def test_google_login_stores_only_the_refresh_token(tmp_path, google):
     auth = requests(google, "/o/oauth2/v2/auth")[-1]["query"]
     assert auth["access_type"] == "offline" and auth["code_challenge_method"] == "S256"
     assert "calendar.readonly" in auth["scope"] and "auth/calendar " not in auth["scope"] + " "
+    assert "include_granted_scopes" not in auth and auth["hd"] == "telemachus.io"
 
 
 def test_google_login_refuses_another_account(tmp_path, google):
@@ -99,6 +100,19 @@ def test_google_login_refuses_missing_permissions(tmp_path, google):
     with pytest.raises(GoogleError, match="gmail.modify"):
         anyio.run(lambda: google_login(tmp_path, account="drop_scope@telemachus.io", open_url=browser))
     assert google_signed_in(tmp_path) is None
+
+
+def test_google_login_refuses_wider_permissions(tmp_path, google):
+    with pytest.raises(GoogleError, match="wider permissions"):
+        anyio.run(lambda: google_login(tmp_path, account="extra_scope@telemachus.io", open_url=browser))
+    assert google_signed_in(tmp_path) is None
+
+
+def test_test_address_is_ignored_outside_tests(monkeypatch):
+    from ayman_hub.spokes.google_api import _hosts
+    monkeypatch.setenv("GOOGLE_API_BASE", "http://evil.example")
+    monkeypatch.delenv("AYMAN_HUB_TESTING")
+    assert _hosts()["token"] == "https://oauth2.googleapis.com/token"
 
 
 def test_revoked_signin_says_how_to_fix(tmp_path, google):
@@ -126,26 +140,30 @@ def hub(google, tmp_path_factory):
         json.dumps({"account": "ayman@telemachus.io", "refresh_token": "1//seeded"}))
     httpx2.get(google["base"] + "/seed?rt=1//seeded")
     cfg = home / "spokes.toml"
-    passthrough = '["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_API_BASE"]'
+    passthrough = ('["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_API_BASE", '
+                   '"AYMAN_HUB_TESTING", "PYTHONPATH"]')
     cfg.write_text(f"""
 [spokes.google]
 enabled = true
 transport = "stdio"
-command = "{sys.executable}"
-args = ["-m", "ayman_hub.spokes.google"]
+command = "@python"
+args = ["-m", "ayman_hub.spokes.google", "--internal-domains", "telemachus.io"]
 env_passthrough = {passthrough}
 mode = "read-write"
 deny_tools = ["*share*", "*permission*", "*trash*", "calendar_*create*", "calendar_*update*"]
+allow_tools = ["docs_create", "docs_append_text", "docs_replace_text", "sheets_create", "sheets_append_rows",
+               "sheets_update_range", "slides_create", "slides_replace_text"]
 allow_destructive = ["docs_replace_text", "sheets_update_range"]
 
 [spokes.gmail]
 enabled = true
 transport = "stdio"
-command = "{sys.executable}"
+command = "@python"
 args = ["-m", "ayman_hub.spokes.gmail"]
 env_passthrough = {passthrough}
 mode = "read-write"
 deny_tools = ["*spam*", "*filter*", "*forward*", "*vacation*"]
+allow_tools = ["gmail_label_thread", "gmail_archive_thread", "gmail_create_label"]
 """)
     key = ClientStore(home).add("claude")
     port = _free_port()
@@ -238,6 +256,21 @@ def test_sheets(hub, google):
     assert err and "Unable to parse range" in text
 
 
+def test_no_writes_to_files_shared_outside(hub, google):
+    err, text = call(hub, "google__sheets_append_rows", spreadsheet_id="shared1", range="Orders!A:B",
+                     rows=[["PO1", "5"]])
+    assert err and "orders@supplier.example" not in text and "someone at supplier.example" in text
+    assert "anyone with the link" in call(hub, "google__docs_create", title="x", folder_id="linkfolder")[1]
+    assert not [r for r in requests(google, "/sheets/v4/spreadsheets/shared1/values") if r["method"] != "GET"]
+
+
+def test_bad_ids_are_refused(hub):
+    err, text = call(hub, "gmail__gmail_get_thread", thread_id="../modify")
+    assert err and "not a valid Google id" in text
+    err, text = call(hub, "google__calendar_list_events", time_min="a", time_max="b", calendar_id="../x")
+    assert err and "calendar_id" in text
+
+
 def test_slides(hub):
     text = call(hub, "google__slides_read", presentation_id="deck1")[1]
     assert "## Slide 1\nHello {{name}}" in text and "Notes: say hi" in text and "## Slide 2" in text
@@ -253,13 +286,13 @@ def test_calendar_is_read_only(hub):
 
 
 def test_gmail_search_and_mailboxes(hub, google):
-    assert "logistics@tallontrading.co" in call(hub, "gmail__gmail_mailboxes")[1]
+    assert "logistics@tallontrading.co" in call(hub, "gmail__gmail_list_mailboxes")[1]
     err, text = call(hub, "gmail__gmail_search", query="is:unread", mailbox="valen_trading")
     assert not err and "Delivery delayed" in text
     q = requests(google, "/gmail/v1/users/me/threads")
     listing = [r for r in q if r["path"].endswith("/threads")][-1]["query"]
-    assert listing["q"] == ("(to:logistics@valentrading.com OR cc:logistics@valentrading.com OR "
-                            "list:logistics@valentrading.com) is:unread")
+    assert listing["q"] == ("((to:logistics@valentrading.com OR cc:logistics@valentrading.com OR "
+                            "list:logistics@valentrading.com)) (is:unread)")
     assert listing["maxResults"] == "10"
     assert "mailbox must be one of" in call(hub, "gmail__gmail_search", mailbox="lush")[1]
     assert call(hub, "gmail__gmail_search", mailbox="ayman", max_results=500)[0] is False

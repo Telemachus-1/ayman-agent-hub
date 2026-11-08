@@ -22,7 +22,7 @@ from typing import Any
 import mcp_types as types
 from mcp.server.mcpserver import MCPServer
 
-from ayman_hub.spokes.google_api import GoogleClient, seg
+from ayman_hub.spokes.google_api import GoogleClient, ident
 
 MAX_TEXT = 40_000
 MAX_SEARCH = 25
@@ -122,7 +122,7 @@ async def _labels() -> dict[str, str]:
 
 
 @server.tool(annotations=READ)
-async def gmail_mailboxes() -> str:
+async def gmail_list_mailboxes() -> str:
     """The mailboxes this spoke covers and the names to pass as `mailbox`."""
     return json.dumps({"mailboxes": MAILBOXES, "also": {"all": "everything", "logistics": "all six logistics@"},
                        "note": "The logistics@ addresses are Google Groups delivered into ayman@ "
@@ -136,7 +136,9 @@ async def gmail_search(query: str = "", mailbox: str = "all", max_results: int =
     tallon, toysellers, foxandfable. Returns subject, from, date, snippet and labels.
     At most 25 per call, to stay inside Gmail's limits."""
     try:
-        q = " ".join(p for p in (mailbox_query(mailbox), query) if p)
+        box = mailbox_query(mailbox)
+        # Brackets keep the mailbox filter in force whatever the query says (e.g. "OR in:anywhere").
+        q = f"({box}) ({query})" if box and query else (box or query)
     except ValueError as e:
         return str(e)
     params: dict = {"maxResults": max(1, min(max_results, MAX_SEARCH))}
@@ -147,7 +149,7 @@ async def gmail_search(query: str = "", mailbox: str = "all", max_results: int =
     listing = await _api("GET", "/threads", params=params)
     out = []
     for t in listing.get("threads", []):
-        full = await _api("GET", f"/threads/{seg(t['id'])}", params={
+        full = await _api("GET", f"/threads/{ident(t['id'])}", params={
             "format": "metadata", "metadataHeaders": ["Subject", "From", "To", "Date"]})
         msgs = full.get("messages", [])
         first, last = (msgs[0], msgs[-1]) if msgs else ({}, {})
@@ -166,7 +168,7 @@ async def gmail_search(query: str = "", mailbox: str = "all", max_results: int =
 async def gmail_get_thread(thread_id: str) -> str:
     """Read a whole thread: each message's from, to, date, text and attachment names.
     Attachments are listed, not opened."""
-    full = await _api("GET", f"/threads/{seg(thread_id)}", params={"format": "full"})
+    full = await _api("GET", f"/threads/{ident(thread_id)}", params={"format": "full"})
     parts = []
     for m in full.get("messages", []):
         h = _headers(m.get("payload", {}))
@@ -221,7 +223,7 @@ async def _modify(thread_id: str, add: list[str], remove: list[str]) -> str:
         add_ids, remove_ids = resolve(add), resolve(remove)
     except ValueError as e:
         return str(e)
-    await _api("POST", f"/threads/{seg(thread_id)}/modify",
+    await _api("POST", f"/threads/{ident(thread_id)}/modify",
                json_body={"addLabelIds": add_ids, "removeLabelIds": remove_ids})
     return f"Thread {thread_id}: added {add or 'nothing'}, removed {remove or 'nothing'}."
 
